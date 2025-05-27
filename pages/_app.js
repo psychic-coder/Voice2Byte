@@ -5,7 +5,7 @@ import PreLoader from "@/src/layouts/PreLoader";
 import "@/styles/globals.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "aos/dist/aos.css";
-import { ToastContainer } from "react-toastify";
+
 import "react-toastify/dist/ReactToastify.css";
 import "../styles/animate.css";
 
@@ -13,6 +13,7 @@ import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "@/redux/store";
 import { ToastWrapper } from "@/src/components/Toast";
+import { ToastContainer } from "react-toastify";
 
 function App({ Component, pageProps }) {
   const [preLoader, setPreLoader] = useState(true);
