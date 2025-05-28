@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { config } from '@/data/axiosData';
+import { useRouter } from 'next/navigation';
 
 const BASE_URL = 'http://localhost:4000/api'; // Replace with actual base URL
 
 const FoodItems = () => {
+  const router = useRouter();
   const [foodItems, setFoodItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -15,8 +17,7 @@ const FoodItems = () => {
   const fetchFoodItems = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${BASE_URL}/hotelAdmin/getAllFoodItems`,config);
-      console.log(response);
+      const response = await axios.get(`${BASE_URL}/hotelAdmin/getAllFoodItems`, config);
       if (response.data.success) {
         setFoodItems(response.data.data);
       }
@@ -28,16 +29,20 @@ const FoodItems = () => {
   };
 
   const handleDelete = async (id) => {
-    const confirm = window.confirm('Are you sure you want to delete this food item?');
-    if (!confirm) return;
+    const confirmDelete = window.confirm('Are you sure you want to delete this food item?');
+    if (!confirmDelete) return;
 
     try {
-      await axios.delete(`${BASE_URL}/hotelAdmin/deleteFoodItem/${id}`,config);
+      await axios.delete(`${BASE_URL}/hotelAdmin/deleteFoodItem/${id}`, config);
       setFoodItems(prev => prev.filter(item => item.id !== id));
     } catch (error) {
       console.error('Error deleting food item:', error);
       alert('Failed to delete the food item.');
     }
+  };
+
+  const handleClick = (id) => {
+    router.push(`/hotelAdmin/foodUpdate?itemId=${id}`);
   };
 
   return (
@@ -48,14 +53,27 @@ const FoodItems = () => {
       ) : (
         <div style={styles.grid}>
           {foodItems.map((item) => (
-            <div key={item.id} style={styles.card}>
-              <img src={"https://images.unsplash.com/photo-1542367592-8849eb950fd8?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8aW5kaWFuJTIwZm9vZHxlbnwwfHwwfHx8MA%3D%3D"} alt={item.name} style={styles.image} />
+            <div key={item.id} style={styles.card} onClick={() => handleClick(item.id)}>
+              <img
+                src={
+                 
+                  "https://images.unsplash.com/photo-1542367592-8849eb950fd8?w=900&auto=format&fit=crop&q=60"
+                }
+                alt={item.name}
+                style={styles.image}
+              />
               <div style={styles.details}>
                 <h2 style={styles.name}>{item.name}</h2>
                 <p style={styles.description}>{item.description}</p>
                 <p style={styles.price}>₹{item.price}</p>
                 <p style={styles.tags}>{item.tags.join(', ')}</p>
-                <button style={styles.deleteButton} onClick={() => handleDelete(item.id)}>
+                <button
+                  style={styles.deleteButton}
+                  onClick={(e) => {
+                    e.stopPropagation(); // prevent card click from triggering
+                    handleDelete(item.id);
+                  }}
+                >
                   Delete
                 </button>
               </div>
@@ -93,6 +111,7 @@ const styles = {
     backgroundColor: '#fff',
     display: 'flex',
     flexDirection: 'column',
+    cursor: 'pointer',
   },
   image: {
     width: '100%',

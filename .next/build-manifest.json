@@ -27,20 +27,15 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/hotelAdmin/addFoodItem": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/hotelAdmin/addFoodItem.js"
-    ],
-    "/hotelAdmin/adminProfile": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/hotelAdmin/adminProfile.js"
-    ],
     "/hotelAdmin/foodItem": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/hotelAdmin/foodItem.js"
+    ],
+    "/hotelAdmin/foodUpdate": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/hotelAdmin/foodUpdate.js"
     ]
   },
   "ampFirstPages": []
