@@ -2,6 +2,9 @@
   "/_app": "pages/_app.js",
   "/_document": "pages/_document.js",
   "/_error": "pages/_error.js",
+  "/hotelAdmin/foodUpdate": "pages/hotelAdmin/foodUpdate.js",
+  "/hotelAdmin/adminProfile": "pages/hotelAdmin/adminProfile.js",
+  "/404": "pages/404.js",
   "/hotelAdmin/addFoodItem": "pages/hotelAdmin/addFoodItem.js",
-  "/hotelAdmin/orderStatus": "pages/hotelAdmin/orderStatus.js"
+  "/hotelAdmin/foodItem": "pages/hotelAdmin/foodItem.js"
 }

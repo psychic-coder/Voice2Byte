@@ -16,7 +16,7 @@
     "axios": "^1.9.0",
     "bootstrap": "^5.3.6",
     "date-fns": "^4.1.0",
-    "framer-motion": "^12.12.1",
+    "framer-motion": "^12.15.0",
     "franc": "^6.2.0",
     "gsap": "^3.13.0",
     "langs": "^2.0.0",

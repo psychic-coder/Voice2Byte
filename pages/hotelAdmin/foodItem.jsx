@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { config } from '@/data/axiosData';
 import { useRouter } from 'next/navigation';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { motion } from 'framer-motion';
 
-const BASE_URL = 'http://localhost:4000/api'; // Replace with actual base URL
+const BASE_URL = 'http://localhost:4000/api';
 
 const FoodItems = () => {
   const router = useRouter();
@@ -45,112 +47,110 @@ const FoodItems = () => {
     router.push(`/hotelAdmin/foodUpdate?itemId=${id}`);
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5
+      }
+    },
+    hover: {
+      scale: 1.03,
+      transition: {
+        duration: 0.3
+      }
+    }
+  };
+
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>All Food Items</h1>
+    <div className="container-fluid py-4" style={{ backgroundColor: '#fffef0', minHeight: '100vh' }}>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h1 className="text-center mb-5 fw-bold" style={{ color: '#ffc107' }}>
+          All Food Items
+        </h1>
+      </motion.div>
+
       {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <div style={styles.grid}>
-          {foodItems.map((item) => (
-            <div key={item.id} style={styles.card} onClick={() => handleClick(item.id)}>
-              <img
-                src={
-                 
-                  "https://images.unsplash.com/photo-1542367592-8849eb950fd8?w=900&auto=format&fit=crop&q=60"
-                }
-                alt={item.name}
-                style={styles.image}
-              />
-              <div style={styles.details}>
-                <h2 style={styles.name}>{item.name}</h2>
-                <p style={styles.description}>{item.description}</p>
-                <p style={styles.price}>₹{item.price}</p>
-                <p style={styles.tags}>{item.tags.join(', ')}</p>
-                <button
-                  style={styles.deleteButton}
-                  onClick={(e) => {
-                    e.stopPropagation(); // prevent card click from triggering
-                    handleDelete(item.id);
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="text-center py-5">
+          <div className="spinner-border text-warning" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
         </div>
+      ) : (
+        <motion.div
+          className="row g-4"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {foodItems.map((item) => (
+            <motion.div
+              key={item.id}
+              className="col-md-4 col-lg-3"
+              variants={itemVariants}
+              whileHover="hover"
+            >
+              <div 
+                className="card h-100 border-0 shadow-sm overflow-hidden position-relative"
+                style={{ borderRadius: '15px', cursor: 'pointer' }}
+                onClick={() => handleClick(item.id)}
+              >
+                <div className="card-img-top overflow-hidden" style={{ height: '200px' }}>
+                  <img
+                    src="https://images.unsplash.com/photo-1542367592-8849eb950fd8?w=900&auto=format&fit=crop&q=60"
+                    alt={item.name}
+                    className="img-fluid w-100 h-100 object-fit-cover"
+                  />
+                  <div className="position-absolute top-0 end-0 bg-warning px-2 py-1 rounded-bl">
+                    <span className="fw-bold">₹{item.price}</span>
+                  </div>
+                </div>
+                <div className="card-body">
+                  <h5 className="card-title fw-bold text-dark">{item.name}</h5>
+                  <p className="card-text text-muted small">{item.description}</p>
+                  <div className="d-flex flex-wrap gap-1 mb-3">
+                    {item.tags.map((tag, index) => (
+                      <span key={index} className="badge bg-warning bg-opacity-25 text-dark">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="card-footer bg-transparent border-0">
+                  <button
+                    className="btn btn-outline-danger btn-sm w-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(item.id);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
       )}
     </div>
   );
-};
-
-const styles = {
-  container: {
-    padding: '2rem',
-    backgroundColor: '#fffef0',
-    minHeight: '100vh',
-    fontFamily: 'sans-serif',
-  },
-  title: {
-    fontSize: '2rem',
-    fontWeight: 'bold',
-    color: '#fbbf24',
-    marginBottom: '1rem',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    gap: '1.5rem',
-  },
-  card: {
-    border: '1px solid #facc15',
-    borderRadius: '12px',
-    overflow: 'hidden',
-    boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-    backgroundColor: '#fff',
-    display: 'flex',
-    flexDirection: 'column',
-    cursor: 'pointer',
-  },
-  image: {
-    width: '100%',
-    height: '200px',
-    objectFit: 'cover',
-  },
-  details: {
-    padding: '1rem',
-    flex: 1,
-  },
-  name: {
-    fontSize: '1.25rem',
-    fontWeight: '600',
-    color: '#d97706',
-  },
-  description: {
-    fontSize: '0.9rem',
-    color: '#4b5563',
-    margin: '0.5rem 0',
-  },
-  price: {
-    fontWeight: 'bold',
-    color: '#10b981',
-  },
-  tags: {
-    fontSize: '0.8rem',
-    color: '#9ca3af',
-    margin: '0.5rem 0',
-  },
-  deleteButton: {
-    marginTop: '0.5rem',
-    padding: '0.5rem 1rem',
-    backgroundColor: '#facc15',
-    color: '#000',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
 };
 
 export default FoodItems;
