@@ -14,3 +14,27 @@ a:focus, a:active,
 [data-nextjs-link] {
   text-decoration: none !important;
 }
+/* Prevent scrolling when mobile menu is open */
+body.mobile-menu-active {
+  overflow: hidden;
+}
+
+/* Mobile menu styles */
+.mobile-menu {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  width: 100%;
+  height: calc(100vh - 60px);
+  background: white;
+  z-index: 1000;
+  transition: transform 0.3s ease;
+}
+
+.mobile-menu.hidden {
+  transform: translateX(-100%);
+}
+
+.mobile-menu.visible {
+  transform: translateX(0);
+}

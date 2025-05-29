@@ -35,7 +35,7 @@ const Index = () => {
                   </select>{" "} */}
                   <VoiceInput/>
                   <Link href="checkout" className="button button-2">
-                    Order Now
+                    Order
                   </Link>
                 </div>
               </div>

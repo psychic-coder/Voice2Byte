@@ -7,7 +7,7 @@ import { SpeakText } from "./SpeakText";
 import { playSound } from "./PlaySound";
 import detectLanguage from "./Franc"; 
 import {translateToEnglish} from "./LibreText";
-import   {  processUserInput }  from "./DeepSeek";
+import { processUserInput } from "./DeepSeek";
 
 export default function VoiceInput() {
   const [isListening, setIsListening] = useState(false);
@@ -49,7 +49,7 @@ export default function VoiceInput() {
     };
   }, []);
 
-  const toggleListening =  () => {
+  const toggleListening = () => {
     const recognition = recognitionRef.current;
 
     if (!recognition) {
@@ -74,13 +74,10 @@ export default function VoiceInput() {
         const intent = await processUserInput(translatedText);
         console.log("Detected Intent:", intent);
         
-       
       } catch (error) {
         console.error("Processing failed:", error);
-      
       }
 
-     
       if (result.includes("show me the restaurants available")) {
         if (pathname === "/") {
           router.push("/restaurants");
@@ -207,17 +204,85 @@ export default function VoiceInput() {
   };
 
   return (
-    <div className="p-4 rounded shadow-lg max-w-md mx-auto bg-white text-black mt-10 text-center">
-      <p className="text-lg font-semibold">
-        Press <span className="text-blue-600">Spacebar</span> to{" "}
-        {isListening ? "stop" : "start"} listening 🎤
-      </p>
-      <p className="mt-4 font-medium">
-        Transcript:{" "}
-        <span className="text-gray-800">
-          {transcript || "Waiting for input..."}
-        </span>
-      </p>
+     <div className="container">
+      <div className="row justify-content-center">
+        <div className="col-md-8 col-lg-6">
+          <div className={`card shadow-lg rounded-3 border-0 ${isListening ? 'border-warning' : ''}`}
+               style={{ backgroundColor: '#fff9e6' }}>
+            <div className="card-body p-4 text-center">
+              <div className="mb-4">
+                <i className={`bi bi-mic-fill fs-1 ${isListening ? 'text-warning' : 'text-dark'}`} 
+                   style={{ color: isListening ? '#ffc107' : '#ffc107' }}></i>
+              </div>
+              
+              <h3 className="card-title mb-3">
+                {isListening ? (
+                  <span className="badge bg-warning text-dark px-3 py-2">Listening...</span>
+                ) : (
+                  <span className="text-dark">Voice Command Interface</span>
+                )}
+              </h3>
+              
+              <p className="lead mb-4 text-dark">
+                Press <span className="badge bg-warning text-dark">Spacebar</span> to{" "}
+                {isListening ? "stop" : "start"} listening
+              </p>
+              
+              <div className="mb-4">
+                <div className="d-flex align-items-center justify-content-center">
+                  <span className="me-2">
+                    <i className="bi bi-activity fs-5" style={{ color: '#ffc107' }}></i>
+                  </span>
+                  <div className="progress w-100" style={{height: '8px'}}>
+                    <div 
+                      className={`progress-bar ${isListening ? 'progress-bar-striped progress-bar-animated' : ''}`} 
+                      role="progressbar" 
+                      style={{
+                        width: isListening ? '100%' : '0%',
+                        backgroundColor: '#ffc107'
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="transcript-container p-3 rounded mb-3" 
+                   style={{ backgroundColor: '#fff3cd' }}>
+                <h6 className="text-start text-dark mb-2">Transcript:</h6>
+                <p className={`text-start fs-5 ${transcript ? 'text-dark' : 'text-muted fst-italic'}`}>
+                  {transcript || "Waiting for voice input..."}
+                </p>
+              </div>
+              
+              <button 
+                onClick={toggleListening}
+                className={`btn btn-lg ${isListening ? 'btn-outline-warning' : 'btn-warning'} rounded-pill px-4`}
+                style={{
+                  backgroundColor: isListening ? 'transparent' : '#ffc107',
+                  borderColor: '#ffc107',
+                  color: isListening ? '#ffc107' : '#212529'
+                }}
+              >
+                {isListening ? (
+                  <>
+                    <i className="bi bi-stop-circle me-2"></i> Stop Listening
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-mic me-2"></i> Start Listening
+                  </>
+                )}
+              </button>
+              
+              <div className="mt-3">
+                <small className="text-muted">
+                  <i className="bi bi-info-circle me-1"></i> Speak clearly after the beep sound
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

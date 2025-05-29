@@ -1,11 +1,8 @@
 {
-  "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
+  "/_app": "pages/_app.js",
   "/_document": "pages/_document.js",
-  "/404": "pages/404.js",
-  "/hotelAdmin/addFoodItem": "pages/hotelAdmin/addFoodItem.js",
-  "/about": "pages/about.js",
-  "/": "pages/index.js",
-  "/hotelAdmin/foodItem": "pages/hotelAdmin/foodItem.js",
-  "/hotelAdmin/adminProfile": "pages/hotelAdmin/adminProfile.js"
+  "/restaurants": "pages/restaurants.js",
+  "/hotelAdmin/adminProfile": "pages/hotelAdmin/adminProfile.js",
+  "/": "pages/index.js"
 }

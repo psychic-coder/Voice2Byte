@@ -5,6 +5,7 @@ import axios from 'axios';
 import Head from 'next/head';
 import Link from 'next/link';
 import { config } from '@/data/axiosData';
+import Layout from '@/src/layouts/Layout';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
 
@@ -161,7 +162,8 @@ export default function foodUpdate() {
   }
 
   return (
-    <div className="min-vh-100 bg-light">
+  
+    <div className="min-vh-100 bg-light" style={{paddingTop:"20px"}}>
       <Head>
         <title>{foodItem.name} - Food Item Details</title>
         <meta name="description" content={`Details for ${foodItem.name}`} />
@@ -377,5 +379,7 @@ export default function foodUpdate() {
         </div>
       </div>
     </div>
-  );
+
+    
+  )
 }
