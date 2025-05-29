@@ -3,6 +3,7 @@ import axios from "axios";
 import { config } from "@/data/axiosData";
 import { showErrorToast, showSuccessToast } from "@/src/components/Toast";
 import 'animate.css';
+import Layout from "@/src/layouts/Layout";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
@@ -104,7 +105,8 @@ const AdminProfile = () => {
   }
 
   return (
-    <div className="bg-light">
+    <Layout>
+    <div className="bg-light" style={{paddingTop:"100px"}}>
       {/* Header Section */}
       <div className="bg-dark bg-gradient py-5 position-relative overflow-hidden">
         <div className="container position-relative z-index-1">
@@ -519,6 +521,7 @@ const AdminProfile = () => {
         }
       `}</style>
     </div>
+    </Layout>
   );
 };
 

@@ -32,10 +32,25 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/checkout": [
+    "/about": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/checkout.js"
+      "static/chunks/pages/about.js"
+    ],
+    "/hotelAdmin/addFoodItem": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/hotelAdmin/addFoodItem.js"
+    ],
+    "/hotelAdmin/adminProfile": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/hotelAdmin/adminProfile.js"
+    ],
+    "/hotelAdmin/foodItem": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/hotelAdmin/foodItem.js"
     ]
   },
   "ampFirstPages": []

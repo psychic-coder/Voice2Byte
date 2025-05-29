@@ -1,9 +1,11 @@
 {
   "/_app": "pages/_app.js",
-  "/_document": "pages/_document.js",
   "/_error": "pages/_error.js",
-  "/": "pages/index.js",
-  "/checkout": "pages/checkout.js",
+  "/_document": "pages/_document.js",
   "/404": "pages/404.js",
-  "/hotelAdmin/orderStatus": "pages/hotelAdmin/orderStatus.js"
+  "/hotelAdmin/addFoodItem": "pages/hotelAdmin/addFoodItem.js",
+  "/about": "pages/about.js",
+  "/": "pages/index.js",
+  "/hotelAdmin/foodItem": "pages/hotelAdmin/foodItem.js",
+  "/hotelAdmin/adminProfile": "pages/hotelAdmin/adminProfile.js"
 }

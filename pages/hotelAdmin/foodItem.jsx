@@ -4,6 +4,7 @@ import { config } from '@/data/axiosData';
 import { useRouter } from 'next/navigation';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { motion } from 'framer-motion';
+import Layout from '@/src/layouts/Layout';
 
 const BASE_URL = 'http://localhost:4000/api';
 
@@ -47,7 +48,6 @@ const FoodItems = () => {
     router.push(`/hotelAdmin/foodUpdate?itemId=${id}`);
   };
 
-  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -76,6 +76,7 @@ const FoodItems = () => {
   };
 
   return (
+    
     <div className="container-fluid py-4" style={{ backgroundColor: '#fffef0', minHeight: '100vh' }}>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -152,5 +153,7 @@ const FoodItems = () => {
     </div>
   );
 };
+
+FoodItems.getLayout = (page) => <Layout>{page}</Layout>;
 
 export default FoodItems;

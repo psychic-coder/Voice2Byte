@@ -4,6 +4,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { config } from '@/data/axiosData';
 import { showErrorToast, showSuccessToast } from '@/src/components/Toast';
+import Layout from '@/src/layouts/Layout';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
 
@@ -73,7 +74,7 @@ export default function AddFoodItem() {
   };
 
   return (
-    <>
+    <Layout>
       <Head>
         <title>Add New Food Item</title>
         <meta name="description" content="Add a new food item to the menu" />
@@ -311,7 +312,7 @@ export default function AddFoodItem() {
         }
       `}</style>
 
-      <div className="gradient-bg">
+      <div className="gradient-bg" style={{paddingTop:"30px"}}>
         <div className="floating-elements">
           <div className="floating-circle"></div>
           <div className="floating-circle"></div>
@@ -491,6 +492,6 @@ export default function AddFoodItem() {
           </div>
         </div>
       </div>
-    </>
+    </Layout>
   );
 }
