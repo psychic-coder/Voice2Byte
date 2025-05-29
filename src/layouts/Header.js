@@ -20,11 +20,11 @@ const Header = ({ extraClass }) => {
   return (
     <header className={extraClass} style={{ 
       padding: "10px 0",
-      height: "60px" // Fixed header height
+      height: "60px"
     }}>
       <div className="container" style={{ 
         padding: "0 15px",
-        height: "100%" // Take full height of header
+        height: "100%" 
       }}>
         <div className="row align-items-center" style={{ height: "100%" }}>
           <div className="col-xl-2" style={{ height: "100%" }}>
