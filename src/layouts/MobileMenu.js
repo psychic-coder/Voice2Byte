@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+
 
 const MobileMenu = ({ showMobileMenu, setShowMobileMenu, currentUser }) => {
   const [activeMenu, setActiveMenu] = useState("");
 
-  // Close menu when clicking outside or pressing Escape
+  
   useEffect(() => {
     const handleClickOutside = (e) => {
       const mobileMenu = document.querySelector('.mobile-menu-container');
@@ -218,7 +218,7 @@ const MobileMenu = ({ showMobileMenu, setShowMobileMenu, currentUser }) => {
               fontSize: '1.1rem',
               fontWeight: '500'
             }}>
-              Pages
+              All Pages
             </span>
             <i 
               className={`fa-solid ${activeMenu === 'Pages' ? 'fa-chevron-up' : 'fa-chevron-down'}`} 

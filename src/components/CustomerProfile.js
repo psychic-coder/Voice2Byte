@@ -102,7 +102,7 @@ const CustomerProfile = () => {
 
   return (
     <Layout>
-      <div className="bg-light min-vh-100" style={{paddingTop: '120px'}}>
+      <div className="bg-light min-vh-100" style={{paddingTop: '10px'}}>
         {/* Header Section */}
         <div className="bg-warning bg-gradient position-relative overflow-hidden">
           <div className="position-absolute top-0 end-0 w-50 h-100 opacity-10">

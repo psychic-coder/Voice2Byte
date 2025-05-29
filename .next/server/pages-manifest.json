@@ -2,7 +2,7 @@
   "/_error": "pages/_error.js",
   "/_app": "pages/_app.js",
   "/_document": "pages/_document.js",
-  "/restaurants": "pages/restaurants.js",
-  "/hotelAdmin/adminProfile": "pages/hotelAdmin/adminProfile.js",
-  "/": "pages/index.js"
+  "/": "pages/index.js",
+  "/signin": "pages/signin.js",
+  "/profile": "pages/profile.js"
 }

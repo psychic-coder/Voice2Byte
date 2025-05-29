@@ -53,11 +53,9 @@ export default function Signin() {
           },
           config
         );
-        console.log("res :",res);
         const { message, success, tokenData } = res.data;
         
         if (success) {
-          console.log("Login successful:", message);
           showSuccessToast("Login successful!");
           dispatch(signInSuccess(tokenData));
           router.push("/");
@@ -87,7 +85,6 @@ export default function Signin() {
         const { message, success, tokenData } = res.data;
         
         if (success) {
-          console.log("Registration successful:", message);
           showSuccessToast(message || "Registration successful!");
           dispatch(signInSuccess(tokenData));
           router.push("/");
