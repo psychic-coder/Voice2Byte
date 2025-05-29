@@ -25,7 +25,7 @@ export default function foodUpdate() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Fetch food item data
+  
   useEffect(() => {
     if (!itemId) return;
 
