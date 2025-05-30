@@ -194,6 +194,9 @@ const Header = ({ extraClass }) => {
                   <Link href="about" style={{ padding: "10px 12px" }}>
                     About
                   </Link>
+                  <Link href="search" style={{ padding: "10px 12px" }}>
+                    Search
+                  </Link>
                 </li>
                 {currentUser?.user?.role === "HOTEL_ADMIN" && (
                   <>

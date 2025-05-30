@@ -1,0 +1,70 @@
+/* Hotel Card Styles */
+.hotelCard {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hotelCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.cardImagePlaceholder {
+  height: 180px;
+  background-color: #f8f9fa;
+  position: relative;
+  background: linear-gradient(45deg, #f5f5f5 25%, #e0e0e0 50%, #f5f5f5 75%);
+  background-size: 200% 200%;
+  animation: shimmer 1.5s infinite;
+}
+
+.imageOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.3));
+}
+
+.ratingBadge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+}
+
+/* Food Card Styles */
+.foodCard {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.foodCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.foodImageContainer {
+  height: 160px;
+  overflow: hidden;
+}
+
+.foodImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.foodCard:hover .foodImage {
+  transform: scale(1.05);
+}
+
+/* Shimmer effect for placeholder */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
