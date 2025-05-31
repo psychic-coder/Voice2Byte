@@ -3,8 +3,14 @@ import VoiceInput from "@/src/components/VoiceInput";
 import Layout from "@/src/layouts/Layout";
 import { sliderProps } from "@/src/sliderProps";
 import Link from "next/link";
+import { useSelector } from "react-redux";
 import { Swiper, SwiperSlide } from "swiper/react";
 const Index = () => {
+
+    const {currentUser}=useSelector((state)=>state.user)
+    console.log(currentUser)
+
+
   return (
     <Layout>
       <section

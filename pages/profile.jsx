@@ -11,9 +11,7 @@ const profile = () => {
     <ProtectedRoute>
   {currentUser && currentUser.user && (
     <>
-      {currentUser.user.role === "CUSTOMER" && <CustomerProfile/>}
-      {/* {currentUser.user.role === "COMPANY_ADMIN" && <CompanyAdminProfile/>}
-      {currentUser.user.role === "HOTEL_ADMIN" && <HotelAdminProfile/>} */}
+    <CustomerProfile/>
     </>
   )}
 </ProtectedRoute>

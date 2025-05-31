@@ -27,7 +27,7 @@ useEffect(()=>{
     <div className="customer-orders-section p-4">
       <h3 className="mb-4">Your Orders</h3>
       
-      {orders.length === 0 ? (
+      {orders?.length === 0 ? (
         <div className="alert alert-info">
           You haven't placed any orders yet.
         </div>
@@ -45,7 +45,7 @@ useEffect(()=>{
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
+              {orders?.map((order) => (
                 <tr key={order.id}>
                   <td>{order.id}</td>
                   <td>{format(new Date(order.createdAt), 'PPp')}</td>

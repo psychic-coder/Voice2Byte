@@ -305,10 +305,10 @@ const Header = ({ extraClass }) => {
               >
                 <i className="fa-solid fa-bag-shopping" />
               </div>
-              {!currentUser?.user?.role === "HOTEL_ADMIN" && (
+              {currentUser && (
                 <div
                   className="button button-2 me-2"
-                  style={{ padding: "8px 12px" }}
+                  style={{ padding: " " }}
                 >
                   {currentUser ? (
                     <div
