@@ -305,24 +305,28 @@ const Header = ({ extraClass }) => {
               >
                 <i className="fa-solid fa-bag-shopping" />
               </div>
-              {currentUser && (
-                <div
-                  className="button button-2 me-2"
-                  style={{ padding: " " }}
-                >
+              {currentUser ? (
+                <div className="button button-2 me-2" style={{ padding: " " }}>
                   {currentUser ? (
                     <div
-                      onClick={() =>
-                        currentUser.user.role === "HOTEL_ADMIN"
-                          ? router.push("/hotelAdmin/adminProfile")
-                          : router.push("/profile")
-                      }
+                      onClick={() => {
+                        const role = currentUser.user.role;
+                        if (role === "HOTEL_ADMIN") {
+                          router.push("/hotelAdmin/adminProfile");
+                        } else if (role === "COMPANY_ADMIN") {
+                          router.push("/companyAdminProfile");
+                        } else {
+                          router.push("/profile");
+                        }
+                      }}
                     >
                       Profile
                     </div>
-                  ) : (
-                    <div onClick={() => router.push("/signin")}>Signin</div>
-                  )}
+                  ) : null}
+                </div>
+              ) : (
+                <div className="button button-2 me-2" style={{ padding: " " }}>
+                  <div onClick={() => router.push("/signin")}>Signin</div>
                 </div>
               )}
               <Link href="checkout" className="button button-2">
