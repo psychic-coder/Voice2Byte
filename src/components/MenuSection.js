@@ -1,7 +1,5 @@
-// MenuSection.jsx
 import { motion } from "framer-motion";
 import ItemCard from "./ItemCard";
-
 
 const MenuSection = ({
   activeTab,
@@ -14,12 +12,12 @@ const MenuSection = ({
       <div className="container">
         <div className="row mb-5" data-aos="fade-up">
           <div className="col-12">
-            <h2 className="fw-bold mb-4">Our Menu</h2>
+            <h2 className="fw-bold mb-4 text-warning">Our Menu</h2>
 
             <div className="d-flex flex-wrap gap-2 mb-4">
               <button
-                className={`btn ${
-                  activeTab === "all" ? "btn-primary" : "btn-outline-primary"
+                className={`btn rounded-pill ${
+                  activeTab === "all" ? "btn-warning text-white" : "btn-outline-warning"
                 }`}
                 onClick={() => setActiveTab("all")}
               >
@@ -28,8 +26,8 @@ const MenuSection = ({
               {uniqueTags.slice(0, 8).map((tag) => (
                 <button
                   key={tag}
-                  className={`btn ${
-                    activeTab === tag ? "btn-primary" : "btn-outline-primary"
+                  className={`btn rounded-pill ${
+                    activeTab === tag ? "btn-warning text-white" : "btn-outline-warning"
                   }`}
                   onClick={() => setActiveTab(tag)}
                 >
@@ -40,8 +38,6 @@ const MenuSection = ({
           </div>
         </div>
 
-
-        
         <div className="row g-4">
           {filteredItems.map((item) => (
             <ItemCard
@@ -54,6 +50,5 @@ const MenuSection = ({
     </section>
   );
 };
-
 
 export default MenuSection;

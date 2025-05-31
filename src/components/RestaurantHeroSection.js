@@ -43,7 +43,7 @@ const RestaurantHeroSection = ({ restaurant }) => {
               <h1 className="text-white mb-0">{restaurant.name}</h1>
             </div>
             
-            <div className="bg-white bg-opacity-10 p-4 rounded-3 backdrop-blur">
+            <div className="bg-warning bg-opacity-10 p-4 rounded-3 backdrop-blur border border-warning border-opacity-25">
               <div className="d-flex align-items-center mb-3">
                 <span className="text-white me-3">Rating:</span>
                 <div className="text-warning">
@@ -61,12 +61,12 @@ const RestaurantHeroSection = ({ restaurant }) => {
                 <div className="d-flex flex-wrap gap-2">
                   {restaurant.category?.length > 0 ? (
                     restaurant.category.map(cat => (
-                      <span key={cat} className="badge bg-primary bg-opacity-25 text-white">
+                      <span key={cat} className="badge bg-warning bg-opacity-25 text-white">
                         {cat}
                       </span>
                     ))
                   ) : (
-                    <span className="badge bg-primary bg-opacity-25 text-white">
+                    <span className="badge bg-warning bg-opacity-25 text-white">
                       Indian
                     </span>
                   )}
@@ -93,27 +93,27 @@ const RestaurantHeroSection = ({ restaurant }) => {
               />
               
               <motion.div 
-                className="position-absolute bottom-0 start-0 bg-white p-3 rounded-3 m-3 shadow-sm"
+                className="position-absolute bottom-0 start-0 bg-warning p-3 rounded-3 m-3 shadow-sm"
                 whileHover={{ scale: 1.05 }}
               >
                 <div className="d-flex align-items-center">
-                  <i className="far fa-clock text-primary fs-4 me-3" />
+                  <i className="far fa-clock text-white fs-4 me-3" />
                   <div>
-                    <h6 className="mb-0">9am – 12pm</h6>
-                    <small className="text-muted">Hours</small>
+                    <h6 className="mb-0 text-white">9am – 12pm</h6>
+                    <small className="text-white-50">Hours</small>
                   </div>
                 </div>
               </motion.div>
               
               <motion.div 
-                className="position-absolute bottom-0 end-0 bg-white p-3 rounded-3 m-3 shadow-sm"
+                className="position-absolute bottom-0 end-0 bg-warning p-3 rounded-3 m-3 shadow-sm"
                 whileHover={{ scale: 1.05 }}
               >
                 <div className="d-flex align-items-center">
-                  <i className="fas fa-utensils text-primary fs-4 me-3" />
+                  <i className="fas fa-utensils text-white fs-4 me-3" />
                   <div>
-                    <h6 className="mb-0">Breakfast, Lunch, Dinner</h6>
-                    <small className="text-muted">Meals</small>
+                    <h6 className="mb-0 text-white">Breakfast, Lunch, Dinner</h6>
+                    <small className="text-white-50">Meals</small>
                   </div>
                 </div>
               </motion.div>
