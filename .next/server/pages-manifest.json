@@ -2,8 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/404": "pages/404.js",
-  "/companyAdminProfile": "pages/companyAdminProfile.js",
   "/": "pages/index.js",
-  "/restaurants": "pages/restaurants.js"
+  "/restaurants": "pages/restaurants.js",
+  "/404": "pages/404.js",
+  "/search": "pages/search.js"
 }
