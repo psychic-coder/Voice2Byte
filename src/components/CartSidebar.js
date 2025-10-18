@@ -33,7 +33,7 @@ const CartSidebar = ({ showCart, setShowCart }) => {
   return (
     <>
       {showCart && (
-        <div className="position-fixed top-0 end-0 h-100 w-100" style={{ zIndex: 1050 }}>
+        <div className="position-fixed top-0 end-0 min-vh-100 w-100" style={{ zIndex: 50 }}>
           <div 
             className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
             onClick={() => setShowCart(false)}

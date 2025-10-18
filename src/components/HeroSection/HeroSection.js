@@ -169,7 +169,7 @@ const HeroSection = () => {
           />
         </div>
 
-        <div className="container position-relative overflow-x-hidden" style={{ zIndex: 10 }}>
+        <div className="container position-relative overflow-x-hidden" style={{ zIndex: 0 }}>
           <div className="row align-items-center g-5 py-5">
             {/* Left Content */}
             <div className="col-lg-6">
