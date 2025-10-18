@@ -37,3 +37,4 @@ coverage/
 # Build output
 dist/
 build/
+.next/

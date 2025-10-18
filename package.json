@@ -15,6 +15,7 @@
     "aos": "^2.3.4",
     "axios": "^1.9.0",
     "bootstrap": "^5.3.6",
+    "cloudinary": "^2.7.0",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.15.0",
     "franc": "^6.2.0",
