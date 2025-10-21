@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import axios from "axios";
-import { restaurants } from "@/data/restaurants";
+// import { restaurants } from "@/data/restaurants";
 import { SpeakText } from "./SpeakText";
 import { playSound } from "./PlaySound";
 import {
@@ -12,8 +12,11 @@ import {
   updateQuantity,
 } from "@/redux/reducers/orderSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { getPageName, pageDescriptions } from "./VoiceComponents/PageName";
+import { config } from "@/data/axiosData";
 
 export default function VoiceInput() {
+  const [restaurants, setRestaurants] = useState([]);
   const user = useSelector((state) => state.user.currentUser);
   const orders = useSelector((state) => state.order.orders);
   const totalPrice =
@@ -32,22 +35,35 @@ export default function VoiceInput() {
   const dispatch = useDispatch();
   const [menuSpoken, setMenuSpoken] = useState(false);
   const currentRestaurantRef = useRef(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
-  const getPageName = (path) => {
-    if (!path || path === "/") return "home";
-    if (path.startsWith("/restaurant-card")) return "restaurantDetails";
-    if (path.startsWith("/restaurants")) return "restaurants";
-    if (path.startsWith("/cart")) return "cart";
-    if (path.startsWith("/search")) return "search";
-    if (path.startsWith("/about")) return "about";
-    if (path.startsWith("/contacts")) return "contacts";
-    if (path.startsWith("/checkout")) return "checkout";
-    if (path.startsWith("/profile")) return "profile";
-    if (path.startsWith("/login")) return "login";
-    if (path.startsWith("/signup")) return "signup";
-    return path.replace("/", "") || "home";
-  };
+   useEffect(() => {
+     const fetchRestaurants = async () => {
+       try {
+         setLoading(true);
+         const res = await axios.get(
+           "http://localhost:4000/api/customer/getAllRestaurants",
+           config
+         );
 
+         setRestaurants(res.data.restaurants);
+         console.log(restaurants);
+         setError(null);
+       } catch (err) {
+         console.error("Failed to fetch restaurants:", err);
+         setError(err.response?.data?.message || err.message);
+       } finally {
+         setLoading(false);
+       }
+     };
+
+     fetchRestaurants();
+   }, []);
+
+
+  
+   
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.code === "Space") {
@@ -265,19 +281,7 @@ export default function VoiceInput() {
     switch (action) {
       case "sayPage":
         const currentPageName = getPageName(pathname);
-        const pageDescriptions = {
-          home: "home page",
-          search: "search page",
-          about: "about",
-          contacts: "contacts",
-          restaurants: "restaurants listing page",
-          restaurantDetails: "restaurant details page",
-          cart: "shopping cart page",
-          checkout: "checkout page",
-          profile: "profile page",
-          login: "login page",
-          signup: "signup page",
-        };
+        
         const pageDescription =
           pageDescriptions[currentPageName] || `${currentPageName} page`;
         SpeakText(`You are currently on the ${pageDescription}.`);
@@ -291,9 +295,30 @@ export default function VoiceInput() {
         break;
 
       case "readRestaurants":
-        if (decision.restaurants?.length) {
-          const list = decision.restaurants.join(", ");
-          SpeakText(`Nearby restaurants: ${list}`);
+        const isOnRestaurantsPage = pathname === "/restaurants";
+
+        if (!isOnRestaurantsPage) {
+          router.push("/restaurants");
+          SpeakText(
+            "Taking you to the restaurants page. Please wait a moment..."
+          );
+
+          
+          setTimeout(() => {
+            if (restaurants.length) {
+              const list = restaurants.map((r) => r.name).join(", ");
+              SpeakText(`Nearby restaurants are: ${list}`);
+            } else {
+              SpeakText("Sorry, I couldn't find any restaurants.");
+            }
+          }, 1500); 
+        } else {
+          if (restaurants?.length) {
+            const list = restaurants.map((r) => r.name).join(", ");
+            SpeakText(`Nearby restaurants are: ${list}`);
+          } else {
+            SpeakText("Sorry, I couldn't find any restaurants.");
+          }
         }
         break;
 
@@ -398,6 +423,9 @@ export default function VoiceInput() {
         break;
     }
   };
+
+    
+
   return (
     <div className="container my-5 w-100">
       <div className="row justify-content-center">
