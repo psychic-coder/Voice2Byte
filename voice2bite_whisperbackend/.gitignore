@@ -1,0 +1,93 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+__pypackages__/
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.ipynb_checkpoints/
+
+# Virtual Environment
+venv/
+env/
+.venv/
+.python-version
+
+# Flask
+instance/
+instance/*
+!instance/.gitkeep
+.webassets-cache
+
+# Caches (within repo)
+.cache/
+.ruff_cache/
+.mypy_cache/
+.pytype/
+.pyre/
+
+# Whisper model cache (if stored inside repo)
+whisper_cache/
+models/
+
+# Audio uploads and artifacts
+uploads/
+recordings/
+
+# Audio files (optional - uncomment if you don't want to track audio files)
+# *.wav
+# *.mp3
+# *.m4a
+# *.flac
+# *.ogg
+
+# Temporary files
+*.tmp
+*.temp
+*.pid
+*.lock
+pip-log.txt
+pip-wheel-metadata/
+tmp/
+temp/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.iml
+.ropeproject/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Logs
+*.log
+logs/
+*.sqlite3
+*.db
+.nox/
+.tox/
