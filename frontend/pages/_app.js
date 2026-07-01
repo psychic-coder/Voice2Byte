@@ -1,7 +1,10 @@
 // pages/_app.js
 import { Fragment, useEffect, useState } from "react";
 import Head from "next/head";
+import { useRouter } from "next/router";
 import PreLoader from "@/src/layouts/PreLoader";
+import { SpeakText } from "@/src/components/SpeakText";
+import { getPageName, pageDescriptions } from "@/src/components/VoiceComponents/PageName";
 import "@/styles/globals.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "aos/dist/aos.css";
@@ -17,6 +20,20 @@ import { ToastContainer } from "react-toastify";
 
 function App({ Component, pageProps }) {
   const [preLoader, setPreLoader] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const handleRouteChange = (url) => {
+      const pageName = getPageName(url);
+      const desc = pageDescriptions[pageName] || `${pageName} page`;
+      SpeakText(`Navigated to ${desc}. Double click anywhere to talk.`);
+    };
+    
+    router.events.on('routeChangeComplete', handleRouteChange);
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [router]);
 
   useEffect(() => {
     const initializeAOS = async () => {

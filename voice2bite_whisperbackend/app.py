@@ -5,16 +5,20 @@ import os
 import json 
 import requests
 from difflib import SequenceMatcher  # Add for fuzzy matching
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 model = whisper.load_model("base")
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-OLLAMA_MODEL = "llama3.2:1b" 
-OLLAMA_URL = "http://localhost:11434/api/chat" 
+OPENROUTER_MODEL = "google/gemini-2.5-flash"
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY") 
 
 ACTIONS = {
     "sayPage": ["page"],
@@ -200,20 +204,26 @@ def analyze_audio():
         user_message = f"User said: '{user_text}'. Current page: {context.get('currentPage', 'unknown')}. Based on the context, decide the next action.{intent_hints}"
 
         payload = {
-            "model": OLLAMA_MODEL,
+            "model": OPENROUTER_MODEL,
             "messages": [
                 {"role": "system", "content": formatted_prompt},
                 {"role": "user", "content": user_message}
             ],
-            "stream": False
+            "response_format": {"type": "json_object"}
+        }
+
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "HTTP-Referer": os.getenv("FRONTEND_URL", "http://localhost:3000"),
+            "X-Title": "Voice2Bite"
         }
 
         try:
-            response = requests.post(OLLAMA_URL, json=payload, timeout=30)
+            response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
         except requests.exceptions.ConnectionError:
             return jsonify({
                 "transcription": user_text,
-                "decision": {"action": "unknown", "reply": f"I heard: '{user_text}'. Ollama is not available."}
+                "decision": {"action": "unknown", "reply": f"I heard: '{user_text}'. AI API is not available."}
             })
         except requests.exceptions.Timeout:
             return jsonify({
@@ -224,15 +234,15 @@ def analyze_audio():
         if response.status_code != 200:
             return jsonify({
                 "transcription": user_text,
-                "decision": {"action": "unknown", "reply": f"I heard: '{user_text}'. AI processing unavailable."}
+                "decision": {"action": "unknown", "reply": f"I heard: '{user_text}'. AI processing unavailable. Status: {response.status_code}"}
             })
 
         try:
-            ollama_output = response.json()
-            content = ollama_output.get("message", {}).get("content", "").strip()
-            print(f"Raw Ollama response content: {content}")
+            api_output = response.json()
+            content = api_output.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+            print(f"Raw API response content: {content}")
         except (json.JSONDecodeError, AttributeError) as e:
-            print(f"Ollama response parsing error: {e}")
+            print(f"API response parsing error: {e}")
             content = ""
 
         def extract_and_parse_json(raw_content):

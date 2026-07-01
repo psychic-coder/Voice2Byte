@@ -71,9 +71,18 @@ export default function VoiceInput() {
         toggleListening();
       }
     };
+    const handleDoubleClick = (e) => {
+      e.preventDefault();
+      toggleListening();
+    };
+
     window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, []);
+    window.addEventListener("dblclick", handleDoubleClick);
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress);
+      window.removeEventListener("dblclick", handleDoubleClick);
+    };
+  }, [isListening]);
 
   const toggleListening = async () => {
     if (isListening) {

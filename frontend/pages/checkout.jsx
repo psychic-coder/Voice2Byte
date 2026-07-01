@@ -109,13 +109,13 @@ const Checkout = () => {
                 className="checkout-form"
               >
                 <h4>Buyer information</h4>
-                <input type="text" name="Name" placeholder="Full Name" />
+                <input type="text" name="Name" placeholder="Full Name" aria-label="Full Name" />
                 <div className="row">
                   <div className="col-lg-6">
-                    <input type="text" name="E-mail" placeholder="E-mail" />
+                    <input type="email" name="Email" placeholder="E-mail" aria-label="Email Address" />
                   </div>
                   <div className="col-lg-6">
-                    <input type="text" name="E-mail" placeholder="Phone" />
+                    <input type="tel" name="Phone" placeholder="Phone" aria-label="Phone Number" />
                   </div>
                 </div>
                 <h4 className="two">Delivery addresses</h4>
@@ -126,20 +126,22 @@ const Checkout = () => {
                   <option>California 3</option>
                   <option>California 4</option>
                 </select>
-                <input type="text" name="Name" placeholder="Street" />
+                <input type="text" name="Street" placeholder="Street" aria-label="Street Address" />
                 <div className="row">
                   <div className="col-lg-6">
                     <input
                       type="text"
-                      name="E-mail"
+                      name="HouseNumber"
                       placeholder="House number"
+                      aria-label="House Number"
                     />
                   </div>
                   <div className="col-lg-6">
                     <input
                       type="number"
-                      name="E-mail"
+                      name="Apartment"
                       placeholder="Apartment number"
+                      aria-label="Apartment Number"
                     />
                     <span>*dispensable</span>
                   </div>
@@ -206,19 +208,21 @@ const Checkout = () => {
                     </label>
                     <input
                       type="number"
-                      name="Name"
+                      name="CardNumber"
                       placeholder="Card number"
+                      aria-label="Credit Card Number"
                     />
                     <div className="row">
                       <div className="col-lg-6">
                         <input
                           type="text"
-                          name="E-mail"
+                          name="Expiration"
                           placeholder="Expiration Date"
+                          aria-label="Expiration Date"
                         />
                       </div>
                       <div className="col-lg-6">
-                        <input type="password" placeholder="CVV" />
+                        <input type="password" placeholder="CVV" aria-label="CVV Code" />
                       </div>
                     </div>
                     <label className="checkbox-one">
