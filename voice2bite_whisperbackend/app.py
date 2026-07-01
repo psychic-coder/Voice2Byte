@@ -49,6 +49,7 @@ You also know the following data dynamically provided by the frontend:
 - restaurants[]: a list of available restaurant names.
 - menuItems[]: list of items available in the current restaurant (includes positional indices e.g., "1. Burger").
 - cart[]: list of items user has added.
+- hotelOrders[]: list of orders for the Hotel Admin (includes id, status, total, items).
 - userLocation: current city or area name.
 - totalPrice: total cart value in currency.
 
@@ -85,10 +86,12 @@ Example menu commands:
 | 6 | "readCart" | User says "what's in my cart" | "cart", "totalPrice" |
 | 7 | "removeFromCart" | User says "remove burger" | "item" |
 | 8 | "checkout" | User says "place my order" | "cart", "totalPrice" |
-| 9 | "greet" | User greets ("hi", "hello") | none |
-| 10 | "goodbye" | User says bye | none |
-| 11 | "help" | User asks "what can you do" | none |
-| 12 | "unknown" | User input cannot be understood | none |
+| 9 | "readOrders" | (HOTEL ADMIN) User asks "read my orders" | "hotelOrders" |
+| 10 | "updateOrderStatus" | (HOTEL ADMIN) User says "accept order 45" or "mark order 45 as delivered" | "orderId", "status" (e.g. "CONFIRMED", "DELIVERED", "REJECTED") |
+| 11 | "greet" | User greets ("hi", "hello") | none |
+| 12 | "goodbye" | User says bye | none |
+| 13 | "help" | User asks "what can you do" | none |
+| 14 | "unknown" | User input cannot be understood | none |
 
 IMPORTANT: Respond with ONLY valid JSON, no markdown:
 {{"action": "showMenu", "restaurant": "McDonald's", "reply": "Showing McDonald's menu"}}

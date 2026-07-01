@@ -3,6 +3,8 @@ import axios from 'axios';
 import { Spinner, Button, Card, Badge } from 'react-bootstrap';
 import { config } from '@/data/axiosData';
 import { motion, AnimatePresence } from 'framer-motion';
+import VoiceInput from '@/src/components/VoiceInput';
+import Layout from '@/src/layouts/Layout';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api` : 'http://localhost:4000/api';
 
@@ -12,6 +14,10 @@ const RecentOrders = () => {
 
   useEffect(() => {
     fetchHotelProfile();
+    
+    const handleRefresh = () => fetchHotelProfile();
+    window.addEventListener('refreshOrders', handleRefresh);
+    return () => window.removeEventListener('refreshOrders', handleRefresh);
   }, []);
 
   const fetchHotelProfile = async () => {
@@ -82,12 +88,14 @@ const RecentOrders = () => {
   };
 
   return (
+    <Layout>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="container py-5 min-vh-100"
       style={{ backgroundColor: '#fffef0' }}
     >
+      <VoiceInput />
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -210,6 +218,7 @@ const RecentOrders = () => {
         </motion.div>
       )}
     </motion.div>
+    </Layout>
   );
 };
 

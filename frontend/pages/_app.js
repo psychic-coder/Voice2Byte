@@ -4,6 +4,7 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import PreLoader from "@/src/layouts/PreLoader";
 import { SpeakText } from "@/src/components/SpeakText";
+import AriaAnnouncer from "@/src/components/AriaAnnouncer";
 import { getPageName, pageDescriptions } from "@/src/components/VoiceComponents/PageName";
 import "@/styles/globals.css";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -81,6 +82,7 @@ function App({ Component, pageProps }) {
             pauseOnHover
             theme="dark"
           />
+          <AriaAnnouncer />
           {preLoader ? <PreLoader /> : <Component {...pageProps} />}
         </PersistGate>
       </Provider>

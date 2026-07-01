@@ -14,6 +14,8 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { getPageName, pageDescriptions } from "./VoiceComponents/PageName";
 import { config } from "@/data/axiosData";
+import { playAudioCue } from "@/src/utils/AudioCues";
+import { announceToScreenReader } from "@/src/components/AriaAnnouncer";
 
 export default function VoiceInput() {
   const [restaurants, setRestaurants] = useState([]);
@@ -250,6 +252,22 @@ export default function VoiceInput() {
         }));
       }
 
+      if (user?.role === 'HOTEL_ADMIN') {
+        try {
+          const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000'}/api/hotelAdmin/me`, config);
+          if (res.data.success) {
+             context.hotelOrders = res.data.profile.restaurant.recentOrders.map(o => ({
+                 id: o.id,
+                 status: o.status,
+                 total: o.totalAmount,
+                 items: o.items.map(i => i.name).join(", ")
+             }));
+          }
+        } catch (e) {
+          console.error("Failed to fetch hotel orders for context");
+        }
+      }
+
       formData.append("context", JSON.stringify(context));
 
       console.log("Processing audio with context:", context);
@@ -283,9 +301,11 @@ export default function VoiceInput() {
         } catch (fallbackError) {
           console.error("Fallback also failed:", fallbackError);
           setBackendStatus("error");
+          playAudioCue('error');
           const errorMsg =
             "Sorry, I couldn't process your voice command. Please check if the backend is running.";
           SpeakText(errorMsg);
+          announceToScreenReader(errorMsg);
           setTranscript(errorMsg);
           return null;
         }
@@ -303,6 +323,7 @@ export default function VoiceInput() {
         handleIntent(decision);
       } else {
         setBackendStatus("no-decision");
+        playAudioCue('error');
         SpeakText(
           `I heard: ${transcription}. But I couldn't understand the command.`
         );
@@ -311,15 +332,17 @@ export default function VoiceInput() {
       return { transcription, decision };
     } catch (error) {
       console.error("Unexpected error processing audio:", error);
+      playAudioCue('error');
       const errorMsg =
         "An unexpected error occurred while processing your voice.";
       SpeakText(errorMsg);
+      announceToScreenReader(errorMsg);
       setTranscript(errorMsg);
       return null;
     }
   };
 
-  const handleIntent = (decision) => {
+  const handleIntent = async (decision) => {
     if (!decision || !decision.action) return;
 
     const action = decision.action;
@@ -327,6 +350,7 @@ export default function VoiceInput() {
     
     if (reply) {
       SpeakText(reply);
+      announceToScreenReader(reply);
     }
     
     setConversationHistory(prev => {
@@ -381,6 +405,7 @@ export default function VoiceInput() {
           });
 
           itemsToAdd.forEach((item) => dispatch(addOrder([item])));
+          playAudioCue('success');
         }
         break;
 
@@ -401,6 +426,7 @@ export default function VoiceInput() {
       case "removeFromCart":
         if (decision.itemId) {
           dispatch(deleteOrder(decision.itemId));
+          playAudioCue('success');
         }
         break;
 
@@ -410,6 +436,23 @@ export default function VoiceInput() {
 
       case "clearCart":
         dispatch(clearOrders());
+        break;
+
+      case "readOrders":
+        // LLM reply is already spoken
+        break;
+
+      case "updateOrderStatus":
+        if (decision.orderId && decision.status) {
+           try {
+             await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000'}/api/hotelAdmin/${decision.orderId}/confirmOrder/${decision.status.toUpperCase()}`, config);
+             window.dispatchEvent(new Event('refreshOrders'));
+             playAudioCue('success');
+           } catch(e) {
+             playAudioCue('error');
+             SpeakText("Failed to update order status.");
+           }
+        }
         break;
 
       case "greet":
