@@ -10,8 +10,8 @@ import hotelAdminRoute from "./routes/hotelAdmin.route.js";
 import companyAdminRoute from "./routes/companyAdmin.route.js";
 import searchRoute from "./routes/search.routes.js";
 import cookieParser from 'cookie-parser';
-
-
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import { rateLimiter } from './middlewares/rateLimiter.js';
 
 dotenv.config({ path: "./.env" });
 export const envMode = process.env.NODE_ENV?.trim() || "DEVELOPMENT";
@@ -47,6 +47,19 @@ app.use("/api/customer", customerRoute);
 app.use("/api/hotelAdmin", hotelAdminRoute);
 app.use("/api/companyAdmin", companyAdminRoute);
 app.use("/api/search", searchRoute);
+
+// API Gateway Proxy for Voice Service (Phase 3)
+app.use(
+  "/api/voice",
+  rateLimiter({ capacity: 5, refillRate: 1, keyPrefix: 'ratelimit:voice:' }),
+  createProxyMiddleware({
+    target: "http://127.0.0.1:5000",
+    changeOrigin: true,
+    pathRewrite: {
+      "^/api/voice": "",
+    },
+  })
+);
 
 // 404 Handler
 // app.all("*", (req, res) => {

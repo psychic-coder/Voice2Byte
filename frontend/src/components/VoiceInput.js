@@ -274,17 +274,29 @@ export default function VoiceInput() {
 
       let response;
       try {
-        response = await axios.post(`${process.env.NEXT_PUBLIC_WHISPER_URL || "http://localhost:5000"}/analyze`, formData, {
+        // Phase 3: Route through Node.js API Gateway instead of Python directly
+        response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000"}/api/voice/analyze`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
           timeout: 30000,
         });
       } catch (axiosError) {
         console.error("Backend communication error:", axiosError);
+        
+        // Phase 3: Handle Gateway Rate Limiting (429 Too Many Requests)
+        if (axiosError.response && axiosError.response.status === 429) {
+            setBackendStatus("error");
+            playAudioCue('error');
+            const rateLimitMsg = "Please slow down, you're sending too many voice requests.";
+            SpeakText(rateLimitMsg);
+            announceToScreenReader(rateLimitMsg);
+            setTranscript(rateLimitMsg);
+            return null;
+        }
 
         try {
           console.log("Trying fallback transcription endpoint...");
           response = await axios.post(
-            `${whisperUrl}/transcribe`,
+            `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000"}/api/voice/transcribe`,
             formData,
             {
               headers: { "Content-Type": "multipart/form-data" },
