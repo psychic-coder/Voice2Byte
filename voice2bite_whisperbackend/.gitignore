@@ -91,3 +91,6 @@ logs/
 *.db
 .nox/
 .tox/
+
+# Qdrant Database
+qdrant_storage/

@@ -10,6 +10,7 @@ import pybreaker
 import psycopg2
 from datetime import datetime
 from fallback_matcher import process_intent
+from qdrant_service import sync_menu, retrieve_top_k_menu_items
 
 load_dotenv()
 
@@ -197,6 +198,29 @@ def analyze_audio():
         default_context.update(context)
         context = default_context
 
+        # ---- PHASE 2: RAG-Based Menu Context ----
+        active_restaurant_id = context.get('restaurantId')
+        original_menu = context.get('menuItems', [])
+        
+        # If user is asking about menu items and we have an active restaurant
+        # We replace the massive menu JSON with Top-K matches via Qdrant
+        if active_restaurant_id and len(original_menu) > 0:
+            top_k_items, is_fallback = retrieve_top_k_menu_items(user_text, active_restaurant_id)
+            
+            if is_fallback:
+                # Semantic fallback: Query didn't match any items in this restaurant above threshold
+                # Skip LLM to prevent hallucination
+                return jsonify({
+                    "transcription": user_text,
+                    "decision": {
+                        "action": "unknown", 
+                        "reply": "I couldn't find anything matching that on the menu. Could you try being more specific?"
+                    }
+                })
+            else:
+                # Inject only the top K items to save tokens!
+                context['menuItems'] = top_k_items
+
         try:
             formatted_prompt = SYSTEM_PROMPT.format(**context)
         except KeyError as e:
@@ -288,7 +312,6 @@ def analyze_audio():
         except (json.JSONDecodeError, AttributeError) as e:
             print(f"API response parsing error: {e}")
             content = ""
-
         def extract_and_parse_json(raw_content):
             if not raw_content:
                 return {}
@@ -473,6 +496,21 @@ def simple_transcribe():
                 os.unlink(file_path)
             except Exception as e:
                 print(f"Error cleaning up file {file_path}: {e}")
+
+@app.route('/sync_menu', methods=['POST'])
+def handle_sync_menu():
+    data = request.json
+    restaurant_id = data.get('restaurantId')
+    menu_items = data.get('menuItems', [])
+    
+    if not restaurant_id or not menu_items:
+        return jsonify({"success": False, "error": "Missing restaurantId or menuItems"})
+        
+    try:
+        count = sync_menu(restaurant_id, menu_items)
+        return jsonify({"success": True, "items_synced": count})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

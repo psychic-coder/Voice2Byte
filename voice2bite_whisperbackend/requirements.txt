@@ -12,3 +12,5 @@ requests
 python-dotenv
 pybreaker
 psycopg2-binary
+qdrant-client
+sentence-transformers
