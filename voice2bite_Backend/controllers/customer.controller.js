@@ -1,5 +1,7 @@
 import { TryCatch } from "../middlewares/error.js";
 import prisma from "../prisma/client.js";
+import { orderQueue } from "../lib/queue.js";
+import { v4 as uuidv4 } from 'uuid';
 
 export const getCustomerProfile = TryCatch(async (req, res) => {
   const customer = await prisma.user.findUnique({
@@ -62,39 +64,22 @@ export const getRestaurantMenu = TryCatch(async (req, res) => {
 export const placeOrder = TryCatch(async (req, res) => {
     const { items, restaurantId } = req.body;
     
-    
-    const foodItems = await prisma.foodItem.findMany({
-        where: { id: { in: items.map(item => item.foodItemId) } },
-        select: { id: true, price: true }
+    // Generate a unique tracking ID for this order instance
+    const trackingId = `order_${uuidv4()}`;
+
+    // Immediately push to BullMQ queue for async processing
+    await orderQueue.add('process_order', {
+        items,
+        restaurantId,
+        userId: req.user.id,
+        trackingId
     });
 
-   
-    const priceMap = foodItems.reduce((map, item) => (map[item.id] = item.price, map), {});
-    const totalAmount = items.reduce((total, item) => 
-        total + (priceMap[item.foodItemId] * item.quantity), 0);
-
-   
-    const order = await prisma.order.create({
-        data: {
-            userId: req.user.id,
-            restaurantId,
-            totalAmount,
-            orderItems: {
-                create: items.map(item => ({
-                    foodItemId: item.foodItemId,
-                    quantity: item.quantity
-                }))
-            }
-        },
-        include: {
-            orderItems: true  
-        }
-    });
-
-    res.status(201).json({ 
+    // Return 202 Accepted immediately so the frontend isn't blocked
+    res.status(202).json({ 
         success: true,
-        message: "Order placed successfully",
-        order 
+        message: "Order placed and is being processed asynchronously",
+        trackingId 
     });
 });
 

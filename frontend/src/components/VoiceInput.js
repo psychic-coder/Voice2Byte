@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import axios from "axios";
+import { io } from "socket.io-client";
 // import { restaurants } from "@/data/restaurants";
 import { SpeakText } from "./SpeakText";
 import { playSound } from "./PlaySound";
@@ -20,7 +21,7 @@ import { announceToScreenReader } from "@/src/components/AriaAnnouncer";
 export default function VoiceInput() {
   const [restaurants, setRestaurants] = useState([]);
   const user = useSelector((state) => state.user.currentUser);
-  const orders = useSelector((state) => state.order.orders);
+  const { orders, trackingId } = useSelector((state) => state.order);
   const totalPrice =
     orders?.reduce((acc, item) => acc + item.price * item.quantity, 0) || 0;
   const [isListening, setIsListening] = useState(false);
@@ -40,6 +41,30 @@ export default function VoiceInput() {
   const currentRestaurantRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+
+  // Socket.IO Integration for Real-Time Order Updates
+  useEffect(() => {
+    let socket;
+    if (trackingId) {
+      console.log(`[Socket.IO] Connecting to tracking ID: ${trackingId}`);
+      socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000");
+
+      socket.on("connect", () => {
+        socket.emit("join_order_room", trackingId);
+      });
+
+      socket.on("order:status", (data) => {
+        console.log("[Socket.IO] Order Status Update:", data);
+        playAudioCue('success');
+        SpeakText(data.message);
+        announceToScreenReader(data.message);
+      });
+    }
+
+    return () => {
+      if (socket) socket.disconnect();
+    };
+  }, [trackingId]);
 
    useEffect(() => {
      const fetchRestaurants = async () => {

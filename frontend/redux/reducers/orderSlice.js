@@ -4,6 +4,7 @@ const initialState = {
   orders: [],
   completed: false,
   restaurantId: null,
+  trackingId: null,
 };
 
 const orderSlice = createSlice({
@@ -64,18 +65,23 @@ const orderSlice = createSlice({
       state.orders = [];
       state.restaurantId = null;
       state.completed = false;
+      state.trackingId = null;
     },
-    completeOrders: (state) => {
+    completeOrders: (state, action) => {
       if (state.orders.length > 0) {
         state.completed = true;
         state.orders = [];
         state.restaurantId = null;
+        if (action.payload) {
+          state.trackingId = action.payload;
+        }
       }
     },
     expireOrders: (state) => {
       state.orders = [];
       state.restaurantId = null;
       state.completed = false;
+      state.trackingId = null;
     },
     setOrders: (state, action) => {
       state.orders = action.payload;

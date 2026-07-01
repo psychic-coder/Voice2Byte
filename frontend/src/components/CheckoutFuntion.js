@@ -91,7 +91,7 @@ const CheckoutFunction = ({ sidebar }) => {
         config
       );
 
-      dispatch(completeOrders());
+      dispatch(completeOrders(response.data.trackingId));
       setOrderSuccess(true);
       showSuccessToast("Order placed successfully!");
       router.push("/order-success");

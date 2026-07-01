@@ -12,13 +12,20 @@ import searchRoute from "./routes/search.routes.js";
 import cookieParser from 'cookie-parser';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { rateLimiter } from './middlewares/rateLimiter.js';
+import http from 'http';
+import { initSocket } from './lib/socket.js';
+import { initWorker } from './workers/orderWorker.js';
 
 dotenv.config({ path: "./.env" });
 export const envMode = process.env.NODE_ENV?.trim() || "DEVELOPMENT";
 const port = process.env.PORT || 3000;
 
-
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.io and Worker
+initSocket(server);
+initWorker();
 
 
 app.use(
@@ -73,6 +80,6 @@ app.use(
 app.use(errorMiddleware);
 
 // Start server
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server is running on port ${port} in ${envMode} mode.`);
 });
