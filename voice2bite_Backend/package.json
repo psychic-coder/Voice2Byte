@@ -34,9 +34,13 @@
  },
  "devDependencies": {
   "@eslint/js": "9.26.0",
+  "@faker-js/faker": "^10.5.0",
   "eslint": "9.26.0",
   "globals": "16.1.0",
   "nodemon": "3.1.10",
   "prisma": "^6.8.2"
+ },
+ "prisma": {
+  "seed": "node prisma/seed.js"
  }
 }
