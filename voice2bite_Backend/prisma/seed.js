@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
   
-  // Clean existing data to avoid unique constraint errors during testing
+
   await prisma.orderItem.deleteMany({});
   await prisma.order.deleteMany({});
   await prisma.foodItem.deleteMany({});
