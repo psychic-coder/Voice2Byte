@@ -4,9 +4,11 @@ import axios from "axios";
 import { config } from "@/data/axiosData";
 import { updateQuantity, deleteOrder, completeOrders } from "@/redux/reducers/orderSlice"; 
 import { showErrorToast, showSuccessToast } from "./Toast";
+import { useRouter } from "next/router";
 
 const CheckoutFunction = ({ sidebar }) => {
   const dispatch = useDispatch();
+  const router = useRouter();
   const { orders } = useSelector((state) => state.order);
   const { currentUser } = useSelector((state) => state.user);
   
@@ -84,7 +86,7 @@ const CheckoutFunction = ({ sidebar }) => {
       });
 
       const response = await axios.post(
-        `http://localhost:4000/api/customer/placeOrder`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000"}/api/customer/placeOrder`,
         orderData,
         config
       );
@@ -92,6 +94,7 @@ const CheckoutFunction = ({ sidebar }) => {
       dispatch(completeOrders());
       setOrderSuccess(true);
       showSuccessToast("Order placed successfully!");
+      router.push("/order-success");
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || "Failed to place order";
       setError(errorMessage);

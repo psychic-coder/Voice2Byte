@@ -16,5 +16,5 @@ COPY . .
 COPY .env* .env*
 RUN if [ -f .env ]; then echo "Using .env"; else echo "No .env found" >&2; fi
 
-EXPOSE 5000
-CMD ["npm", "run", "dev"]
+EXPOSE 4000
+CMD npx prisma migrate deploy && node app.js

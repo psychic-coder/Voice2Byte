@@ -4,7 +4,7 @@ import { Spinner, Button, Card, Badge } from 'react-bootstrap';
 import { config } from '@/data/axiosData';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const BASE_URL = 'http://localhost:4000/api';
+const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api` : 'http://localhost:4000/api';
 
 const RecentOrders = () => {
   const [orders, setOrders] = useState([]);
