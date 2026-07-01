@@ -10,3 +10,5 @@ flask_cors
 openai-whisper
 requests
 python-dotenv
+pybreaker
+psycopg2-binary

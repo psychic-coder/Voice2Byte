@@ -4,10 +4,52 @@ import whisper
 import os
 import json 
 import requests
-from difflib import SequenceMatcher  # Add for fuzzy matching
+from difflib import SequenceMatcher
 from dotenv import load_dotenv
+import pybreaker
+import psycopg2
+from datetime import datetime
+from fallback_matcher import process_intent
 
 load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:rohitPen15@127.0.0.1:5432/voice2bite")
+
+class DBListener(pybreaker.CircuitBreakerListener):
+    def state_change(self, cb, old_state, new_state):
+        try:
+            conn = psycopg2.connect(DATABASE_URL)
+            cur = conn.cursor()
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS resilience_events (
+                    id SERIAL PRIMARY KEY,
+                    timestamp TIMESTAMP NOT NULL,
+                    old_state VARCHAR(50),
+                    new_state VARCHAR(50),
+                    reason VARCHAR(255)
+                )
+            """)
+            cur.execute("""
+                INSERT INTO resilience_events (timestamp, old_state, new_state, reason)
+                VALUES (%s, %s, %s, %s)
+            """, (datetime.now(), old_state.name, new_state.name, "Circuit breaker state transition"))
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"Failed to log state change to DB: {e}")
+
+openrouter_breaker = pybreaker.CircuitBreaker(
+    fail_max=3,
+    reset_timeout=30,
+    listeners=[DBListener()]
+)
+
+@openrouter_breaker
+def call_openrouter(headers, payload):
+    response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=5)
+    response.raise_for_status()
+    return response
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -223,22 +265,20 @@ def analyze_audio():
         }
 
         try:
-            response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
-        except requests.exceptions.ConnectionError:
+            response = call_openrouter(headers, payload)
+        except pybreaker.CircuitBreakerError:
+            print("Circuit breaker is OPEN. Falling back to local matcher.")
+            fallback_decision = process_intent(user_text, context)
             return jsonify({
                 "transcription": user_text,
-                "decision": {"action": "unknown", "reply": f"I heard: '{user_text}'. AI API is not available."}
+                "decision": fallback_decision
             })
-        except requests.exceptions.Timeout:
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed: {e}. Falling back to local matcher.")
+            fallback_decision = process_intent(user_text, context)
             return jsonify({
                 "transcription": user_text,
-                "decision": {"action": "unknown", "reply": f"I heard: '{user_text}'. Request timed out."}
-            })
-            
-        if response.status_code != 200:
-            return jsonify({
-                "transcription": user_text,
-                "decision": {"action": "unknown", "reply": f"I heard: '{user_text}'. AI processing unavailable. Status: {response.status_code}"}
+                "decision": fallback_decision
             })
 
         try:
