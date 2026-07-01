@@ -1,80 +1,248 @@
-# Voice2Bite 🍕🎙️
+# Voice2Bite: The Accessibility-First Food Ordering Platform 🍕🎙️
 
-An advanced, voice-first food ordering platform designed for visually impaired users.
-
-Voice2Bite leverages OpenAI's Whisper (Speech-to-Text), LLMs (Intent Parsing), and Vector Databases (RAG) to seamlessly transform spoken requests into actionable e-commerce transactions, all processed asynchronously for maximum resilience.
+Voice2Bite is an advanced, voice-first e-commerce and food delivery platform designed specifically for visually impaired users. By combining real-time Speech-to-Intent parsing, Retrieval-Augmented Generation (RAG) for menu lookup, a resilient microservices API gateway, and asynchronous order pipelines with real-time audio announcements, Voice2Bite provides a seamless, hands-free dining experience.
 
 ---
 
-## ✨ Features
-
-- **🎙️ Real-time Speech-to-Intent**: Speak your order ("I'd like to order 2 spicy pizzas from Domino's") and the AI will parse your intent, match the items against the menu using semantic search, and dynamically update your cart.
-- **🛡️ High Availability API Gateway**: Built-in Fail-Open Resilience logic with Circuit Breakers to ensure the frontend never stalls if external APIs go down.
-- **🚥 Atomic Rate Limiting**: Robust Lua-based Token Bucket rate limiting via Redis ensures the expensive AI endpoints cannot be spammed, completely immune to race conditions.
-- **⚡ Async Order Pipeline**: Orders are processed instantaneously using a Redis-backed **BullMQ** job queue, returning a `202 Accepted` to prevent UI blocking.
-- **📡 Real-Time WebSockets**: As the background worker progresses an order (`RECEIVED` → `PREPARING` → `READY`), state updates are broadcasted to the frontend via **Socket.IO**.
-- **🔊 Audio Cues & TTS**: Fully integrated Text-To-Speech engine. Visually impaired users hear physical audio chimes and vocal announcements whenever an order's status changes in real-time!
-
----
-
-## 🏗️ Architecture
-
-- **Frontend**: Next.js, React, Redux Toolkit, Web Audio API, `socket.io-client`.
-- **Primary Backend (API Gateway)**: Node.js, Express, PostgreSQL, Prisma, BullMQ, Socket.IO.
-- **Voice AI Microservice**: Python, Flask, OpenAI Whisper (via `openai-whisper`), OpenRouter LLMs.
-- **Databases**:
-  - **PostgreSQL**: Relational data (Users, Restaurants, Menus, Orders).
-  - **Redis**: Token Buckets (Rate Limiting) and Job Queue (BullMQ).
-  - **Qdrant**: Vector Database for RAG (Retrieval-Augmented Generation) semantic searches.
+## 📖 Table of Contents
+1. [Target Audience & Accessibility Philosophy](#-target-audience--accessibility-philosophy)
+2. [Detailed Architectural Blueprint](#-detailed-architectural-blueprint)
+3. [Core Feature Breakdown](#-core-feature-breakdown)
+4. [Folder & Directory Structure](#-folder--directory-structure)
+5. [Prisma Database Schema Model](#-prisma-database-schema-model)
+6. [Detailed Environment Configuration](#-detailed-environment-configuration)
+7. [Quick Start & Setup Instructions (Dockerized)](#-quick-start--setup-instructions-dockerized)
+8. [Database Seeding & Test Credentials](#-database-seeding--test-credentials)
+9. [Verification & Testing Protocols](#-verification--testing-protocols)
 
 ---
 
-## 🚀 Quick Start (Dockerized Full-Stack)
+## 🧑‍🤝‍🧑 Target Audience & Accessibility Philosophy
 
-We have containerized the *entire* architecture into a single orchestrator. It automatically boots all databases, runs schema migrations, seeds the database with 100+ realistic fake entries, and starts all microservices.
+Traditional food ordering apps rely heavily on complex visual layouts, image-based menus, and micro-interactions that are extremely difficult or impossible for visually impaired individuals to navigate. Voice2Bite removes these barriers:
+- **Audio-First Design**: The interface is fully operable through voice commands, sound effects (earcons), and dynamic screen-reader / Text-To-Speech (TTS) announcements.
+- **Cognitive Load Reduction**: Users do not have to dig through nested categories. They simply say what they want, and semantic AI connects the dots.
+- **Real-Time Reassurance**: The application vocally guides the user through every state of their order from the kitchen to their door.
 
-### Prerequisites
-- Docker & Docker Compose installed.
+---
 
-### Run the Application
-```bash
-# Clone the repository
-git clone https://github.com/your-username/voice2bite.git
-cd voice2bite
+## 🏗️ Detailed Architectural Blueprint
 
-# Spin up the entire stack!
-docker-compose up -d --build
+Voice2Bite is split into three main layers:
+
+```mermaid
+graph TD
+    A[Next.js Frontend] -->|1. Spoken Audio| B(Node.js API Gateway)
+    B -->|2. Circuit Breaker / Rate Limit| C(Python AI Backend)
+    C -->|3. Whisper STT Transcription| C
+    C -->|4. RAG Query| D[(Qdrant Vector DB)]
+    C -->|5. Intent Parsing via Gemini| E[OpenRouter API]
+    B -->|6. Async Queue| F[BullMQ + Redis]
+    F -->|7. Worker Processing| G[(PostgreSQL DB)]
+    F -->|8. Status Update| B
+    B -->|9. WebSocket Broadcast| A
 ```
 
-**Services Available At:**
-- **Frontend Web UI**: `http://localhost:3000`
-- **Node.js API Gateway**: `http://localhost:4000`
-- **Python Voice Microservice**: `http://localhost:5000`
-- **PostgreSQL DB**: `localhost:5432`
-- **Redis Cache**: `localhost:6379`
-- **Qdrant Vector DB**: `localhost:6333`
+1. **Frontend (Next.js & React)**: Tracks state via Redux, captures micro-inputs with the Web Audio API (integrating Voice Activity Detection), and speaks back using browser `window.speechSynthesis`.
+2. **Primary Backend & API Gateway (Node.js/Express)**: Orchestrates requests, protects services via Redis-based Token Bucket rate limiting, manages database transactions, hosts the **BullMQ** job pipeline, and maintains live client connections via **Socket.IO**.
+3. **Voice AI Backend (Python/Flask)**: Handles high-compute AI processing, utilizing OpenAI's Whisper model for speech-to-text (STT) transcription and querying **Qdrant** for semantic menu matches.
 
 ---
 
-## 🧪 Test Credentials (Pre-Seeded)
+## ⚡ Core Feature Breakdown
 
-The database is automatically seeded with 20 fake restaurants, 100+ food items, and multiple user personas upon running `docker-compose up`.
+### 1. 🎙️ Intelligent Voice-First Pipeline
+- **Voice Activity Detection (VAD)**: Automatically detects when a user begins and stops speaking, preventing excessive idle recording.
+- **Audio Feedback (Earcons)**: Uses unique sound frequencies to alert the user of status states (e.g., listening initialized, successful parsing, error occurred).
+- **Text-To-Speech (TTS)**: Built-in synthesis dynamically reads out system notifications and menu details using natural pacing.
 
-You can log in to the Frontend (`http://localhost:3000/login`) using any of the following pre-seeded test accounts:
+### 2. 🛡️ Fault-Tolerant Circuit Breakers (`pybreaker`)
+- Ensures that the Node.js API Gateway remains highly available.
+- If the AI or external OpenRouter service experiences downtime, the gateway triggers a fail-open circuit breaker, preventing requests from hanging and seamlessly serving local fallbacks or user instructions instead.
 
-### 🏢 Company Admin
-- **Email:** `admin@voice2bite.com`
-- **Password:** `password123`
-- *Role: Global platform administration.*
+### 3. 🚥 Atomic Token Bucket Rate Limiting (Redis + Lua)
+- Protects the system from being overwhelmed by expensive audio transcription/LLM parsing requests.
+- Employs a custom Lua script executed atomically inside Redis, calculating the bucket capacity and refilling tokens dynamically to avoid race conditions.
 
-### 🏨 Hotel Admin (Restaurant Owner)
-- **Email:** `hotel@voice2bite.com`
-- **Password:** `password123`
-- *Role: Manages menus and confirms incoming orders.*
+### 4. 🔍 Semantic Menu Retrieval (Qdrant RAG)
+- Users don't need to specify exact menu item names.
+- Spoken items are vectorized and queried against a **Qdrant Vector Database**. This allows a request for "a cold drink" to instantly locate a "Chilled Pepsi" or "Iced Lemon Tea" in the database.
 
-### 🧑‍🤝‍🧑 Customer (End User)
-- **Email:** `customer@voice2bite.com`
-- **Password:** `password123`
-- *Role: Can browse restaurants, use Voice Input, and track real-time orders.*
+### 5. ⚙️ Asynchronous Order Pipeline (BullMQ + Redis)
+- Instead of keeping the client connection waiting, the Node.js backend handles orders asynchronously.
+- The `placeOrder` endpoint immediately stores the payload, queues a job in **BullMQ**, and returns `202 Accepted` with a `trackingId`.
+- An independent background worker processes the order transaction and triggers real-time updates.
 
-*(Note: There are 50 additional customers and 19 additional hotel admins randomly generated and seeded into the DB as well!)*
+### 6. 📡 Real-Time WebSockets (Socket.IO)
+- Integrates Socket.IO into the Node HTTP server.
+- The background worker emits order status updates (`RECEIVED` → `PREPARING` → `READY`) to a dedicated tracking room.
+- The frontend listens to these events, plays success chimes, and invokes the TTS voice engine to read the update aloud to the user.
+
+---
+
+## 📂 Folder & Directory Structure
+
+```text
+blindFoodOrder/
+├── frontend/                          # Next.js / React Frontend Application
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── VoiceInput.js          # Core Audio recorder, VAD, and Socket.IO voice listeners
+│   │   │   ├── CheckoutFuntion.js     # Places order and saves trackingId
+│   │   │   └── SpeakText.js           # Browser Speech Synthesis Wrapper
+│   │   └── pages/
+│   ├── redux/                         # Global Redux Store (user, order tracking states)
+│   └── Dockerfile
+│
+├── voice2bite_Backend/                # Node.js Express API Gateway & Orchestrator
+│   ├── controllers/
+│   │   └── customer.controller.js     # Decoupled PlaceOrder async endpoint
+│   ├── lib/
+│   │   ├── queue.js                   # BullMQ Queue instance
+│   │   └── socket.js                  # Socket.IO connection manager
+│   ├── middlewares/
+│   │   └── rateLimiter.js             # Lua-based Redis token bucket rate limiter
+│   ├── prisma/
+│   │   ├── schema.prisma              # PostgreSQL database schemas
+│   │   └── seed.js                    # Faker-js database seeder script
+│   ├── workers/
+│   │   └── orderWorker.js             # Async background BullMQ order processor
+│   ├── app.js                         # Application entrypoint
+│   └── Dockerfile
+│
+├── voice2bite_whisperbackend/         # Python Flask AI service
+│   ├── app.py                         # Flask API routes for Whisper & Qdrant RAG
+│   ├── config.py                      # Circuit Breaker configurations
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+└── docker-compose.yml                 # Main full-stack orchestrator
+```
+
+---
+
+## 🗄️ Prisma Database Schema Model
+
+The database represents a fully relational system optimized for quick lookup:
+
+```prisma
+model User {
+  id        Int      @id @default(autoincrement())
+  address   String
+  photoUrl  String
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole // CUSTOMER | COMPANY_ADMIN | HOTEL_ADMIN
+  orders    Order[]
+}
+
+model Restaurant {
+  id          Int          @id @default(autoincrement())
+  name        String
+  latitude    Float
+  longitude   Float
+  address     String
+  location    String
+  rating      Int
+  hotelTags   String[]
+  desc        String
+  category    String[]
+  hotelAdmins HotelAdmin[]
+  foodItems   FoodItem[]
+}
+
+model FoodItem {
+  id           Int         @id @default(autoincrement())
+  name         String
+  description  String
+  price        Float
+  isAvailable  Boolean     @default(true)
+  tags         String[] 
+  restaurantId Int
+  createdById  Int
+}
+
+model Order {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  restaurantId  Int
+  confirmedById Int?
+  totalAmount   Float
+  status        OrderStatus // PENDING | CONFIRMED | REJECTED | DELIVERED
+}
+```
+
+---
+
+## ⚙️ Detailed Environment Configuration
+
+Make sure the following variables are configured appropriately in your environment files:
+
+### Node.js Gateway (`voice2bite_Backend/.env`)
+- `PORT`: Server port (default: `4000`).
+- `DATABASE_URL`: PostgreSQL connection string.
+- `REDIS_URL`: Redis server connection URI.
+- `JWT_SECRET`: Hashing secret for authentication tokens.
+
+### Python Backend (`voice2bite_whisperbackend/.env`)
+- `PORT`: Flask server port (default: `5000`).
+- `QDRANT_URL`: Host address for the Qdrant instance.
+- `OPENROUTER_API_KEY`: API key for accessing OpenRouter LLMs.
+
+### Next.js Frontend (`frontend/.env.local`)
+- `NEXT_PUBLIC_BACKEND_URL`: URL pointing to the Node.js API Gateway.
+
+---
+
+## 🚀 Quick Start & Setup Instructions (Dockerized)
+
+The entire project is structured to boot, migrate, seed, and run from a single command.
+
+### 1. Boot up the Application Stack
+Ensure you have Docker daemon running, then run the following in your terminal root:
+```bash
+docker-compose up -d --build
+```
+This single command spins up:
+- PostgreSQL (DB)
+- Redis (Queue + Limiter)
+- Qdrant (Vector DB)
+- `db-seeder` (Migrates schemas and seeds the database)
+- Node.js backend
+- Python AI backend
+- Next.js frontend
+
+---
+
+## 🌱 Database Seeding & Test Credentials
+
+The `db-seeder` container dynamically loads **100+ realistic fake database records** (including 20 restaurants, 100 menu items, 50 customers, and historical order details) to save manual setup time.
+
+You can log in to `http://localhost:3000/login` using the pre-seeded credentials:
+
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **🏢 Company Admin** | `admin@voice2bite.com` | `password123` |
+| **🏨 Hotel Admin** | `hotel@voice2bite.com` | `password123` |
+| **🧑‍🤝‍🧑 Customer** | `customer@voice2bite.com` | `password123` |
+
+---
+
+## 🧪 Verification & Testing Protocols
+
+### 1. Simulating the Async Order Pipeline
+You can trigger and verify the asynchronous BullMQ order and Socket.IO real-time voice announcement flow locally:
+```bash
+cd voice2bite_Backend
+node scripts/test_async_order.js
+```
+*Expected output:* Shows the job queuing in BullMQ, being picked up by the background worker, and receiving step-by-step Socket.IO state updates.
+
+### 2. Testing Rate Limiting
+To check the atomic Redis token bucket under heavy concurrent load:
+```bash
+cd voice2bite_Backend
+node scripts/test_rate_limiter.js
+```
+*Expected output:* Confirms exactly the configured limit of requests are allowed, while excess concurrent hits are gracefully blocked with `429 Too Many Requests`.
