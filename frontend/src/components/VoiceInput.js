@@ -23,6 +23,7 @@ export default function VoiceInput() {
     orders?.reduce((acc, item) => acc + item.price * item.quantity, 0) || 0;
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [conversationHistory, setConversationHistory] = useState([]);
   const [lastDecision, setLastDecision] = useState(null);
   const [backendStatus, setBackendStatus] = useState("unknown");
   const mediaRecorderRef = useRef(null);
@@ -103,11 +104,48 @@ export default function VoiceInput() {
       mediaRecorderRef.current = mediaRecorder;
       audioChunks.current = [];
 
+      // Audio analysis for silence detection (VAD)
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      analyser.fftSize = 256;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+
+      const checkSilence = () => {
+        if (!mediaRecorderRef.current || mediaRecorderRef.current.state === "inactive") return;
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
+        const average = sum / bufferLength;
+
+        if (average < 15) { // silence threshold
+          if (!silenceTimerRef.current) {
+            silenceTimerRef.current = setTimeout(() => {
+              console.log("Silence detected, stopping recording...");
+              if (isListening) stopRecording();
+            }, 2000); // 2 seconds of silence
+          }
+        } else {
+          if (silenceTimerRef.current) {
+            clearTimeout(silenceTimerRef.current);
+            silenceTimerRef.current = null;
+          }
+        }
+      };
+
+      const silenceInterval = setInterval(checkSilence, 200);
+
       mediaRecorder.ondataavailable = (event) => {
         audioChunks.current.push(event.data);
       };
 
       mediaRecorder.onstop = async () => {
+        clearInterval(silenceInterval);
         playSound("/sounds/voice.mp3");
         const audioBlob = new Blob(audioChunks.current, { type: "audio/webm" });
         await processAudio(audioBlob);
@@ -164,6 +202,7 @@ export default function VoiceInput() {
 
       const context = {
         currentPage: currentPageName,
+        conversationHistory: conversationHistory,
         restaurants: restaurants.map((r) => r.name),
         menuItems: [],
         cart: [],
@@ -192,8 +231,8 @@ export default function VoiceInput() {
 
         if (restaurant) {
           currentRestaurantRef.current = restaurant;
-          context.menuItems = restaurant.menu.map((m) => ({
-            name: m.item,
+          context.menuItems = restaurant.menu.map((m, index) => ({
+            name: `${index + 1}. ${m.item}`,
             price: m.price,
             id: m.id || restaurant.menu.indexOf(m),
           }));
@@ -284,50 +323,32 @@ export default function VoiceInput() {
     if (!decision || !decision.action) return;
 
     const action = decision.action;
-    //  const reply = decision.reply || "";
-    //  SpeakText(reply);
+    const reply = decision.reply || "";
+    
+    if (reply) {
+      SpeakText(reply);
+    }
+    
+    setConversationHistory(prev => {
+        const newHistory = [...prev, { user: transcript, ai: reply }];
+        return newHistory.slice(-5);
+    });
 
     switch (action) {
       case "sayPage":
-        const currentPageName = getPageName(pathname);
-        
-        const pageDescription =
-          pageDescriptions[currentPageName] || `${currentPageName} page`;
-        SpeakText(`You are currently on the ${pageDescription}.`);
+        // LLM reply already spoken
         break;
 
       case "goTo":
         if (decision.page) {
           router.push(`/${decision.page}`);
-          SpeakText(`Navigating to ${decision.page} page.`);
         }
         break;
 
       case "readRestaurants":
         const isOnRestaurantsPage = pathname === "/restaurants";
-
         if (!isOnRestaurantsPage) {
           router.push("/restaurants");
-          SpeakText(
-            "Taking you to the restaurants page. Please wait a moment..."
-          );
-
-          
-          setTimeout(() => {
-            if (restaurants.length) {
-              const list = restaurants.map((r) => r.name).join(", ");
-              SpeakText(`Nearby restaurants are: ${list}`);
-            } else {
-              SpeakText("Sorry, I couldn't find any restaurants.");
-            }
-          }, 1500); 
-        } else {
-          if (restaurants?.length) {
-            const list = restaurants.map((r) => r.name).join(", ");
-            SpeakText(`Nearby restaurants are: ${list}`);
-          } else {
-            SpeakText("Sorry, I couldn't find any restaurants.");
-          }
         }
         break;
 
@@ -336,12 +357,6 @@ export default function VoiceInput() {
           const encodedName = encodeURIComponent(decision.restaurant);
           if (!pathname.startsWith("/restaurant-card"))
             router.push(`/restaurant-card?name=${encodedName}`);
-          if (decision.menuItems?.length) {
-            SpeakText(`Menu for ${decision.restaurant}:`);
-            decision.menuItems.forEach((item, idx) =>
-              setTimeout(() => SpeakText(item), idx * 1000)
-            );
-          }
         }
         break;
 
@@ -366,15 +381,6 @@ export default function VoiceInput() {
           });
 
           itemsToAdd.forEach((item) => dispatch(addOrder([item])));
-          const totalAdded = itemsToAdd.length;
-          const itemNames = itemsToAdd
-            .map((item) => `${item.quantity} ${item.name}`)
-            .join(", ");
-          SpeakText(`Added ${itemNames} to your cart.`);
-        } else if (decision.items?.length) {
-          SpeakText(
-            "Please navigate to a restaurant page first to add items to your cart."
-          );
         }
         break;
 
@@ -386,39 +392,24 @@ export default function VoiceInput() {
               quantity: decision.quantity,
             })
           );
-          SpeakText(
-            `Updated ${decision.itemName} quantity to ${decision.quantity}.`
-          );
         }
         break;
 
       case "readCart":
-        if (orders?.length) {
-          const items = orders.map((i) => `${i.quantity} ${i.name}`).join(", ");
-          const totalPrice = orders.reduce(
-            (acc, i) => acc + i.price * i.quantity,
-            0
-          );
-          SpeakText(`Your cart has: ${items}. Total: ${totalPrice}`);
-        } else SpeakText("Your cart is empty.");
         break;
 
       case "removeFromCart":
         if (decision.itemId) {
           dispatch(deleteOrder(decision.itemId));
-          SpeakText(`Removed ${decision.itemName} from cart.`);
         }
         break;
 
       case "checkout":
         router.push("/checkout");
-        const total = orders.reduce((acc, i) => acc + i.price * i.quantity, 0);
-        SpeakText(`Proceeding to checkout. Total: ${total}`);
         break;
 
       case "clearCart":
         dispatch(clearOrders());
-        SpeakText("Cart cleared.");
         break;
 
       case "greet":
