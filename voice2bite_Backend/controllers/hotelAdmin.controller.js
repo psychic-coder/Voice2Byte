@@ -256,11 +256,6 @@ export const getHotelOrders = TryCatch(async (req, res) => {
   
     const order = await prisma.order.findUnique({
       where: { id: parseInt(orderId) },
-      include: {
-        restaurant: {
-          select: { createdById: true }, 
-        },
-      },
     });
   
     if (!order) {
@@ -270,8 +265,11 @@ export const getHotelOrders = TryCatch(async (req, res) => {
       });
     }
   
+    const admin = await prisma.hotelAdmin.findUnique({
+      where: { id: adminId },
+    });
   
-    if (order.restaurant.createdById !== adminId) {
+    if (order.restaurantId !== admin?.restaurantId) {
       return res.status(403).json({
         success: false,
         message: "Unauthorized to modify this order.",

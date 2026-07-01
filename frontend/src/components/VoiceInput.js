@@ -43,7 +43,7 @@ export default function VoiceInput() {
        try {
          setLoading(true);
          const res = await axios.get(
-           "http://localhost:4000/api/customer/getAllRestaurants",
+           `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000"}/api/customer/getAllRestaurants`,
            config
          );
 
@@ -208,7 +208,7 @@ export default function VoiceInput() {
 
       let response;
       try {
-        response = await axios.post("http://localhost:5000/analyze", formData, {
+        response = await axios.post(`${process.env.NEXT_PUBLIC_WHISPER_URL || "http://localhost:5000"}/analyze`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
           timeout: 30000,
         });
@@ -218,7 +218,7 @@ export default function VoiceInput() {
         try {
           console.log("Trying fallback transcription endpoint...");
           response = await axios.post(
-            "http://localhost:5000/transcribe",
+            `${whisperUrl}/transcribe`,
             formData,
             {
               headers: { "Content-Type": "multipart/form-data" },

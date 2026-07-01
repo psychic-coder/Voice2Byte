@@ -11,6 +11,8 @@ import MenuSection from "@/src/components/MenuSection";
 import CartSidebar from '@/src/components/CartSidebar';
 import RestaurantHeroSection from "@/src/components/RestaurantHeroSection";
 import Layout from "@/src/layouts/Layout";
+import { useSelector } from "react-redux";
+import VoiceInput from "@/src/components/VoiceInput";
 
 const RestaurantCard = () => {
   const searchParams = useSearchParams();
@@ -19,8 +21,8 @@ const RestaurantCard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
-  const [cart, setCart] = useState([]);
   const [showCart, setShowCart] = useState(false);
+  const { orders } = useSelector((state) => state.order);
 
 
 const uniqueTags = useMemo(() => {
@@ -34,11 +36,11 @@ const filteredItems = useMemo(() => {
 }, [activeTab, restaurant]);
 
   const { totalItems, totalPrice } = useMemo(() => {
-    return cart.reduce((acc, item) => ({
+    return (orders || []).reduce((acc, item) => ({
       totalItems: acc.totalItems + item.quantity,
-      totalPrice: acc.totalPrice + (item.price * item.quantity)
+      totalPrice: acc.totalPrice + (item.itemPrice * item.quantity)
     }), { totalItems: 0, totalPrice: 0 });
-  }, [cart]);
+  }, [orders]);
 
   useEffect(() => {
     const fetchRestaurant = async () => {
@@ -50,7 +52,7 @@ const filteredItems = useMemo(() => {
 
       try {
         const res = await axios.get(
-          `http://localhost:4000/api/customer/getAllRestaurants/${id}`, 
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000"}/api/customer/getAllRestaurants/${id}`, 
           config
         );
         setRestaurant(res.data?.restaurant || null);
@@ -66,34 +68,7 @@ const filteredItems = useMemo(() => {
     fetchRestaurant();
   }, [searchParams, router]);
 
-  const handleCartUpdate = (item, operation = 'add') => {
-    setCart(prevCart => {
-      if (operation === 'remove') {
-        const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
-        if (existingItem?.quantity > 1) {
-          return prevCart.map(cartItem =>
-            cartItem.id === item.id 
-              ? { ...cartItem, quantity: cartItem.quantity - 1 } 
-              : cartItem
-          );
-        }
-        return prevCart.filter(cartItem => cartItem.id !== item.id);
-      }
-      
-      const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
-      if (existingItem) {
-        return prevCart.map(cartItem =>
-          cartItem.id === item.id 
-            ? { ...cartItem, quantity: cartItem.quantity + 1 } 
-            : cartItem
-        );
-      }
-      return [...prevCart, { ...item, quantity: 1 }];
-    });
-  };
-
   const handleCheckout = () => {
-    // You can add additional logic here before checkout if needed
     router.push('/checkout');
   };
 
@@ -116,8 +91,11 @@ const filteredItems = useMemo(() => {
         setActiveTab={setActiveTab}
         uniqueTags={uniqueTags}
         filteredItems={filteredItems}
-        handleCartUpdate={handleCartUpdate}
       />
+
+      <div className="container mt-4 mb-5">
+        <VoiceInput />
+      </div>
 
     
       <motion.div 
@@ -142,7 +120,6 @@ const filteredItems = useMemo(() => {
       <CartSidebar
         showCart={showCart}
         setShowCart={setShowCart}
-        cart={cart}
       />
     </>
     </Layout>

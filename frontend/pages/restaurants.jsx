@@ -22,7 +22,7 @@ const Restaurants = () => {
       try {
         setLoading(true);
         const res = await axios.get(
-          "http://localhost:4000/api/customer/getAllRestaurants",
+            `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000"}/api/customer/getAllRestaurants`,
           config
         );
         

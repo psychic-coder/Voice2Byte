@@ -6,7 +6,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { motion } from 'framer-motion';
 import Layout from '@/src/layouts/Layout';
 
-const BASE_URL = 'http://localhost:4000/api';
+const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api` : 'http://localhost:4000/api';
 
 const FoodItems = () => {
   const router = useRouter();

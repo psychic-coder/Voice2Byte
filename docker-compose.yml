@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: voice2bite
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: 
+      context: ./voice2bite_Backend
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - DATABASE_URL=postgresql://postgres:mysecretpassword@db:5432/voice2bite
+      - JWT_SECRET=rajkrishnapriyanshiharshitarohitbhavishya
+      - UPSTASH_REDIS_URL=https://gentle-pup-12315.upstash.io
+      - UPSTASH_REDIS_TOKEN=ATAbAAIjcDFjMWY3NWU2OGQwYjA0ZTAzOWM5MmU3MzJmMDJlY2MzM3AxMA
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      - db
+
+  whisper:
+    build:
+      context: ./voice2bite_whisperbackend
+    ports:
+      - "5000:5000"
+    environment:
+      # If using ollama on the host machine:
+      - OLLAMA_URL=http://host.docker.internal:11434/api/chat
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:4000
+      - NEXT_PUBLIC_WHISPER_URL=http://localhost:5000
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

@@ -46,7 +46,7 @@ export default function Signin() {
   
       try {
         const res = await axios.post(
-          "http://localhost:4000/api/login",
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000"}/api/login`,
           {
             email,
             password
@@ -71,7 +71,7 @@ export default function Signin() {
    
       try {
         const res = await axios.post(
-          "http://localhost:4000/api/registerCustomer",
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000"}/api/registerCustomer`,
           {
             address,
             photoUrl,
