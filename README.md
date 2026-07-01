@@ -41,6 +41,8 @@ graph TD
     F -->|7. Worker Processing| G[(PostgreSQL DB)]
     F -->|8. Status Update| B
     B -->|9. WebSocket Broadcast| A
+    B -.->|OTLP Traces| H(Jaeger Observability)
+    C -.->|OTLP Traces| H
 ```
 
 1. **Frontend (Next.js & React)**: Tracks state via Redux, captures micro-inputs with the Web Audio API (integrating Voice Activity Detection), and speaks back using browser `window.speechSynthesis`.
@@ -77,6 +79,11 @@ graph TD
 - Integrates Socket.IO into the Node HTTP server.
 - The background worker emits order status updates (`RECEIVED` → `PREPARING` → `READY`) to a dedicated tracking room.
 - The frontend listens to these events, plays success chimes, and invokes the TTS voice engine to read the update aloud to the user.
+
+### 7. 📊 Full-Stack Observability (OpenTelemetry + Jaeger)
+- Vendor-neutral distributed tracing using OpenTelemetry (OTLP).
+- Deep insight into latency bottlenecks across services: measures End-to-End Gateway routing, AI STT inference time, and LLM text generation time.
+- All traces are aggregated in a local **Jaeger** UI for visual bottleneck analysis and pipeline reporting.
 
 ---
 
@@ -116,7 +123,7 @@ blindFoodOrder/
 │   ├── Dockerfile
 │   └── requirements.txt
 │
-└── docker-compose.yml                 # Main full-stack orchestrator
+└── docker-compose.yml                 # Main full-stack orchestrator (includes Jaeger & Redis)
 ```
 
 ---
@@ -208,9 +215,10 @@ This single command spins up:
 - PostgreSQL (DB)
 - Redis (Queue + Limiter)
 - Qdrant (Vector DB)
+- Jaeger (OpenTelemetry Observability)
 - `db-seeder` (Migrates schemas and seeds the database)
-- Node.js backend
-- Python AI backend
+- Node.js backend (API Gateway + Workers)
+- Python AI backend (Flask)
 - Next.js frontend
 
 ---
@@ -242,7 +250,16 @@ node scripts/test_async_order.js
 ### 2. Testing Rate Limiting
 To check the atomic Redis token bucket under heavy concurrent load:
 ```bash
-cd voice2bite_Backend
-node scripts/test_rate_limiter.js
+node voice2bite_Backend/scripts/test_rate_limit.js
 ```
 *Expected output:* Confirms exactly the configured limit of requests are allowed, while excess concurrent hits are gracefully blocked with `429 Too Many Requests`.
+
+### 3. Viewing Observability Traces
+Voice2Bite captures fine-grained latency metrics across STT, LLM, and proxy pipelines.
+1. Make a voice request via the app (or run the load test).
+2. Open the **Jaeger UI** in your browser at `http://localhost:16686`.
+3. Select `voice2bite-node-gateway` or `voice2bite-ai-backend` to view the distributed transaction waterfalls.
+4. You can also generate an automated latency report script via:
+```bash
+JAEGER_API_URL=http://localhost:16686/api/traces node voice2bite_Backend/scripts/generate_latency_report.js
+```

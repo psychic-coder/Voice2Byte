@@ -1,4 +1,4 @@
-const TARGET_URL = "http://localhost:4000/api/voice/transcribe"; 
+const TARGET_URL = "http://localhost:4000/api/voice/analyze"; 
 const CONCURRENT_REQUESTS = 50;
 
 console.log(`--- Phase 3: Atomic Token Bucket Rate Limiting Test ---`);

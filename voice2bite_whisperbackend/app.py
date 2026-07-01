@@ -4,6 +4,8 @@ import whisper
 import os
 import json 
 import requests
+import tempfile
+import time
 from difflib import SequenceMatcher
 from dotenv import load_dotenv
 import pybreaker
@@ -12,7 +14,25 @@ from datetime import datetime
 from fallback_matcher import process_intent
 from qdrant_service import sync_menu, retrieve_top_k_menu_items
 
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+
 load_dotenv()
+
+# Set up OpenTelemetry
+resource = Resource(attributes={"service.name": "voice2bite-ai-backend"})
+trace.set_tracer_provider(TracerProvider(resource=resource))
+otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318") + "/v1/traces"
+otlp_exporter = OTLPSpanExporter(endpoint=otlp_endpoint)
+span_processor = BatchSpanProcessor(otlp_exporter)
+trace.get_tracer_provider().add_span_processor(span_processor)
+
+tracer = trace.get_tracer(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:rohitPen15@127.0.0.1:5432/voice2bite")
 
@@ -48,19 +68,21 @@ openrouter_breaker = pybreaker.CircuitBreaker(
 
 @openrouter_breaker
 def call_openrouter(headers, payload):
+    OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
     response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=5)
     response.raise_for_status()
     return response
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+FlaskInstrumentor().instrument_app(app)
+RequestsInstrumentor().instrument()
 
 model = whisper.load_model("base")
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 OPENROUTER_MODEL = "google/gemini-2.5-flash"
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY") 
 
 ACTIONS = {
@@ -140,9 +162,7 @@ IMPORTANT: Respond with ONLY valid JSON, no markdown:
 {{"action": "showMenu", "restaurant": "McDonald's", "reply": "Showing McDonald's menu"}}
 """
 
-# Helper function for fuzzy matching
 def find_best_restaurant_match(user_input, available_restaurants):
-    """Find the best matching restaurant name using fuzzy matching"""
     if not available_restaurants:
         return None
     
@@ -152,7 +172,7 @@ def find_best_restaurant_match(user_input, available_restaurants):
     
     for restaurant in available_restaurants:
         ratio = SequenceMatcher(None, user_input_lower, restaurant.lower()).ratio()
-        if ratio > best_ratio and ratio > 0.6:  # Threshold for decent match
+        if ratio > best_ratio and ratio > 0.6:
             best_ratio = ratio
             best_match = restaurant
     
@@ -160,7 +180,6 @@ def find_best_restaurant_match(user_input, available_restaurants):
 
 @app.route("/analyze", methods=["POST"])
 def analyze_audio():
-    file_path = None
     try:
         if "file" not in request.files:
             return jsonify({"error": "No file uploaded"}), 400
@@ -169,20 +188,25 @@ def analyze_audio():
         if not audio.filename:
             return jsonify({"error": "No file selected"}), 400
             
-        import time
-        safe_filename = f"audio_{int(time.time())}_{audio.filename}"
-        file_path = os.path.join(UPLOAD_DIR, safe_filename)
-        audio.save(file_path)
+        start_stt = time.time()
+        with tracer.start_as_current_span("STT_Processing") as stt_span:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
+                audio.save(temp_audio.name)
+                temp_audio_path = temp_audio.name
 
-        result = model.transcribe(file_path)
-        user_text = result["text"].strip()
+            result = model.transcribe(temp_audio_path)
+            user_text = result["text"].strip()
+            os.remove(temp_audio_path)
+            
+            stt_span.set_attribute("transcription.text", user_text)
+            stt_span.set_attribute("transcription.duration_sec", time.time() - start_stt)
+        
         print(f"Transcribed: {user_text}")
 
         try:
             context_str = request.form.get("context", "{}")
             context = json.loads(context_str) if context_str else {}
-        except (json.JSONDecodeError, AttributeError) as e:
-            print(f"Context parsing error: {e}")
+        except (json.JSONDecodeError, AttributeError):
             context = {}
 
         default_context = {
@@ -198,18 +222,13 @@ def analyze_audio():
         default_context.update(context)
         context = default_context
 
-        # ---- PHASE 2: RAG-Based Menu Context ----
         active_restaurant_id = context.get('restaurantId')
         original_menu = context.get('menuItems', [])
         
-        # If user is asking about menu items and we have an active restaurant
-        # We replace the massive menu JSON with Top-K matches via Qdrant
         if active_restaurant_id and len(original_menu) > 0:
             top_k_items, is_fallback = retrieve_top_k_menu_items(user_text, active_restaurant_id)
             
             if is_fallback:
-                # Semantic fallback: Query didn't match any items in this restaurant above threshold
-                # Skip LLM to prevent hallucination
                 return jsonify({
                     "transcription": user_text,
                     "decision": {
@@ -288,22 +307,30 @@ def analyze_audio():
             "X-Title": "Voice2Bite"
         }
 
-        try:
-            response = call_openrouter(headers, payload)
-        except pybreaker.CircuitBreakerError:
-            print("Circuit breaker is OPEN. Falling back to local matcher.")
-            fallback_decision = process_intent(user_text, context)
-            return jsonify({
-                "transcription": user_text,
-                "decision": fallback_decision
-            })
-        except requests.exceptions.RequestException as e:
-            print(f"Request failed: {e}. Falling back to local matcher.")
-            fallback_decision = process_intent(user_text, context)
-            return jsonify({
-                "transcription": user_text,
-                "decision": fallback_decision
-            })
+        start_llm = time.time()
+        with tracer.start_as_current_span("LLM_Processing") as llm_span:
+            try:
+                response = call_openrouter(headers, payload)
+                llm_span.set_attribute("llm.duration_sec", time.time() - start_llm)
+                llm_span.set_attribute("llm.model", OPENROUTER_MODEL)
+            except pybreaker.CircuitBreakerError:
+                print("Circuit breaker is OPEN. Falling back to local matcher.")
+                llm_span.set_attribute("circuit_breaker.state", "OPEN")
+                llm_span.set_status(trace.Status(trace.StatusCode.ERROR))
+                fallback_decision = process_intent(user_text, context)
+                return jsonify({
+                    "transcription": user_text,
+                    "decision": fallback_decision
+                })
+            except requests.exceptions.RequestException as e:
+                print(f"Request failed: {e}. Falling back to local matcher.")
+                llm_span.record_exception(e)
+                llm_span.set_status(trace.Status(trace.StatusCode.ERROR))
+                fallback_decision = process_intent(user_text, context)
+                return jsonify({
+                    "transcription": user_text,
+                    "decision": fallback_decision
+                })
 
         try:
             api_output = response.json()
@@ -452,11 +479,7 @@ def analyze_audio():
             "message": str(e)[:200]  
         }), 500
     finally:
-        if file_path and os.path.exists(file_path):
-            try:
-                os.unlink(file_path)
-            except Exception as e:
-                print(f"Error cleaning up file {file_path}: {e}")
+        pass
     
 @app.route('/health', methods=['GET'])
 def health_check():
