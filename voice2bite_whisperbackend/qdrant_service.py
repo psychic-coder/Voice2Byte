@@ -1,15 +1,36 @@
 import uuid
+import re
+import os
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct, Filter, FieldCondition, MatchValue
 from sentence_transformers import SentenceTransformer
 
-# Initialize Qdrant Client (Docker local default port 6333)
-# Note: Ensure docker-compose is running
-qdrant_client = QdrantClient(host="localhost", port=6333)
+# Initialize Qdrant Client from the Docker/network configuration when available.
+qdrant_url = os.getenv("QDRANT_URL")
+if qdrant_url:
+    qdrant_client = QdrantClient(url=qdrant_url)
+else:
+    qdrant_client = QdrantClient(
+        host=os.getenv("QDRANT_HOST", "localhost"),
+        port=int(os.getenv("QDRANT_PORT", "6333")),
+    )
 COLLECTION_NAME = "menus"
 
 # Initialize local embedding model
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
+
+
+def _tokenize(text):
+    return {token for token in re.findall(r"[a-z0-9]+", text.lower()) if len(token) > 2}
+
+
+def _has_query_overlap(query, payload):
+    query_tokens = _tokenize(query)
+    payload_text = " ".join(
+        str(payload.get(field, "")) for field in ("name", "description", "category")
+    )
+    payload_tokens = _tokenize(payload_text)
+    return bool(query_tokens & payload_tokens)
 
 # Create collection if it doesn't exist
 try:
@@ -53,7 +74,7 @@ def sync_menu(restaurant_id, menu_items):
         return len(points)
     return 0
 
-def retrieve_top_k_menu_items(query, restaurant_id, k=5, threshold=0.25):
+def retrieve_top_k_menu_items(query, restaurant_id, k=5, threshold=0.4):
     """
     Embeds the user query and retrieves top K matches from Qdrant.
     Returns a tuple (items, is_hallucinated_fallback)
@@ -81,8 +102,12 @@ def retrieve_top_k_menu_items(query, restaurant_id, k=5, threshold=0.25):
         if not points:
             return [], True
             
-        # Check if the top match is above our similarity threshold
-        if points[0].score < threshold:
+        # Check if the top match is above our similarity threshold and has at least some lexical support.
+        top_hit = points[0]
+        if top_hit.score < threshold:
+            return [], True
+
+        if not _has_query_overlap(query, top_hit.payload or {}):
             return [], True
             
         items = []
@@ -91,7 +116,8 @@ def retrieve_top_k_menu_items(query, restaurant_id, k=5, threshold=0.25):
             items.append({
                 "name": f"{idx + 1}. {payload.get('name')}",
                 "description": payload.get('description', ''),
-                "price": payload.get('price', 0)
+                "price": payload.get('price', 0),
+                "score": hit.score,
             })
             
         return items, False

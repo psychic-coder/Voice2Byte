@@ -4,7 +4,7 @@ import prisma from '../prisma/client.js';
 import { getIO } from '../lib/socket.js';
 
 const connection = new Redis({
-  host: '127.0.0.1',
+  host: process.env.REDIS_HOST || '127.0.0.1',
   port: 6379,
   maxRetriesPerRequest: null,
 });
@@ -44,6 +44,12 @@ export const initWorker = () => {
     io.to(trackingId).emit('order:status', { 
       status: 'RECEIVED', 
       message: 'Order received by the kitchen' 
+    });
+    io.to(`restaurant_${restaurantId}`).emit('admin:order_update', {
+      orderId: order.id,
+      trackingId,
+      status: 'RECEIVED',
+      message: 'New order received'
     });
 
     // Simulate preparation time

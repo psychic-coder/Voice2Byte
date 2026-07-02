@@ -15,6 +15,7 @@ import { rateLimiter } from './middlewares/rateLimiter.js';
 import http from 'http';
 import { initSocket } from './lib/socket.js';
 import { initWorker } from './workers/orderWorker.js';
+import { trace } from '@opentelemetry/api';
 
 dotenv.config({ path: "./.env" });
 export const envMode = process.env.NODE_ENV?.trim() || "DEVELOPMENT";
@@ -56,11 +57,19 @@ app.use("/api/companyAdmin", companyAdminRoute);
 app.use("/api/search", searchRoute);
 
 // API Gateway Proxy for Voice Service (Phase 3)
+app.use("/api/voice", (req, res, next) => {
+  const span = trace.getActiveSpan();
+  if (span) {
+    span.updateName(`POST /api/voice${req.path}`);
+  }
+  next();
+});
+
 app.use(
   "/api/voice",
   rateLimiter({ capacity: 5, refillRate: 1, keyPrefix: 'ratelimit:voice:' }),
   createProxyMiddleware({
-    target: "http://127.0.0.1:5000",
+    target: process.env.VOICE_BACKEND_URL || "http://voice-backend:5000",
     changeOrigin: true,
     pathRewrite: {
       "^/api/voice": "",

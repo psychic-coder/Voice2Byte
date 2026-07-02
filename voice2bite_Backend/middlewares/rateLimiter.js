@@ -1,11 +1,50 @@
 import Redis from 'ioredis';
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
+import { trace } from '@opentelemetry/api';
 dotenv.config();
 
 const redis = new Redis({
-  host: "127.0.0.1",
+  host: process.env.REDIS_HOST || "127.0.0.1",
   port: 6379
 });
+
+const localBuckets = new Map();
+
+const decodeRateLimitSubject = (req) => {
+  const cookieToken = req.cookies?.access_token || req.cookies?.token;
+  const authHeader = req.headers?.authorization;
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const token = cookieToken || bearerToken;
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (decoded?.id !== undefined) {
+        return `user:${decoded.id}`;
+      }
+    } catch (error) {
+      // Fall back to network identity when token decoding fails.
+    }
+  }
+
+  return `ip:${req.ip || req.connection.remoteAddress || 'unknown'}`;
+};
+
+const evaluateLocalTokenBucket = (key, capacity, refillRate, now) => {
+  const existing = localBuckets.get(key) || { tokens: capacity, lastRefill: now };
+  const elapsed = Math.max(0, now - existing.lastRefill);
+  const refill = elapsed * refillRate;
+  const tokens = Math.min(capacity, existing.tokens + refill);
+
+  if (tokens < 1) {
+    localBuckets.set(key, { tokens, lastRefill: now });
+    return false;
+  }
+
+  localBuckets.set(key, { tokens: tokens - 1, lastRefill: now });
+  return true;
+};
 
 // Atomic Token Bucket Lua Script
 // KEYS[1]: bucket key
@@ -58,7 +97,7 @@ export const rateLimiter = (options = {}) => {
   return async (req, res, next) => {
     try {
       // Use IP as identifier if no user is authenticated
-      const identifier = req.cookies?.token ? 'authenticated_user' : (req.ip || req.connection.remoteAddress || 'unknown');
+      const identifier = decodeRateLimitSubject(req);
       const key = `${keyPrefix}${identifier}`;
       const now = Math.floor(Date.now() / 1000);
       const expireTime = Math.ceil(capacity / refillRate);
@@ -77,6 +116,11 @@ export const rateLimiter = (options = {}) => {
       if (allowed === 1) {
         next();
       } else {
+        const activeSpan = trace.getActiveSpan();
+        if (activeSpan) {
+          activeSpan.addEvent('rate_limit_rejected');
+          activeSpan.setAttribute('rate_limit.rejected', true);
+        }
         return res.status(429).json({
           success: false,
           error: "Too Many Requests. Please slow down.",
@@ -84,8 +128,30 @@ export const rateLimiter = (options = {}) => {
       }
     } catch (error) {
       console.error("Rate Limiter Error:", error);
-      // Fail-open: If Redis is down, allow request through
-      next();
+      const identifier = decodeRateLimitSubject(req);
+      const key = `${keyPrefix}${identifier}`;
+      const now = Math.floor(Date.now() / 1000);
+
+      if (evaluateLocalTokenBucket(key, capacity, refillRate, now)) {
+        const activeSpan = trace.getActiveSpan();
+        if (activeSpan) {
+          activeSpan.addEvent('rate_limit_local_fallback_allowed');
+          activeSpan.setAttribute('rate_limit.fallback', 'memory');
+        }
+        next();
+        return;
+      }
+
+      const activeSpan = trace.getActiveSpan();
+      if (activeSpan) {
+        activeSpan.addEvent('rate_limit_local_fallback_rejected');
+        activeSpan.setAttribute('rate_limit.fallback', 'memory');
+        activeSpan.setAttribute('rate_limit.rejected', true);
+      }
+      return res.status(429).json({
+        success: false,
+        error: "Too Many Requests. Please slow down.",
+      });
     }
   };
 };

@@ -19,6 +19,12 @@ export const initSocket = (server) => {
       console.log(`Socket ${socket.id} joined room: ${trackingId}`);
     });
 
+    // Admin joins a restaurant room to receive updates
+    socket.on('join_restaurant_room', (restaurantId) => {
+      socket.join(`restaurant_${restaurantId}`);
+      console.log(`Socket ${socket.id} joined restaurant room: restaurant_${restaurantId}`);
+    });
+
     socket.on('disconnect', () => {
       console.log(`Socket disconnected: ${socket.id}`);
     });

@@ -11,6 +11,13 @@ openai-whisper
 requests
 python-dotenv
 pybreaker
+redis
 psycopg2-binary
 qdrant-client
 sentence-transformers
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-flask
+opentelemetry-instrumentation-requests
+opentelemetry-exporter-otlp
+gunicorn

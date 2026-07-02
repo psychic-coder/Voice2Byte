@@ -100,6 +100,7 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - REDIS_HOST=redis
 
     depends_on:
       - qdrant

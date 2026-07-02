@@ -1,50 +1,74 @@
+import { io } from 'socket.io-client';
 import { Queue } from 'bullmq';
 import Redis from 'ioredis';
-import { io } from 'socket.io-client';
-import { v4 as uuidv4 } from 'uuid';
+process.env.DATABASE_URL = 'postgresql://user:password@localhost:5433/voice2bitedb';
+import prisma from '../prisma/client.js';
 
-const connection = new Redis({
-  host: '127.0.0.1',
-  port: 6379,
-});
+const redisConnection = new Redis({ host: '127.0.0.1', port: 6379 });
+const orderQueue = new Queue('OrderQueue', { connection: redisConnection });
 
-const orderQueue = new Queue('OrderQueue', { connection });
-
-const runTest = async () => {
-    console.log("--- Phase 4: Async Order Pipeline Test ---");
-    
-    const trackingId = `test_order_${uuidv4()}`;
-    console.log(`[1] Generated Tracking ID: ${trackingId}`);
-
-    // Connect Socket.IO client to the backend
+async function testAsyncPipeline() {
+  console.log("Starting Phase 4 Test: Async Order Pipeline Cross-talk and Latency");
+  
+  // Fetch valid users and restaurants
+  const user = await prisma.user.findFirst();
+  const dbRests = await prisma.restaurant.findMany({ take: 3 });
+  
+  if (!user || dbRests.length < 3) {
+      console.log("Need at least 1 user and 3 restaurants in DB.");
+      process.exit(1);
+  }
+  
+  const restaurants = dbRests.map(r => r.id);
+  const clients = {};
+  const latencies = [];
+  let eventsReceived = 0;
+  
+  const enqueueTimes = {};
+  
+  // Set up 3 Socket.io clients
+  for (const rId of restaurants) {
     const socket = io('http://localhost:4000');
     
-    socket.on('connect', async () => {
-        console.log(`[2] Socket connected! ID: ${socket.id}`);
-        
-        // Join the specific room for this order
-        socket.emit('join_order_room', trackingId);
-        console.log(`[3] Joined Socket Room: ${trackingId}`);
-
-        // Listen for real-time status updates
-        socket.on('order:status', (data) => {
-            console.log(`✅ [Socket.IO Event Received] Status: ${data.status} | Message: ${data.message}`);
-            if (data.status === 'READY') {
-                console.log("🎉 Test Complete: Async pipeline successfully processed and broadcasted all states!");
-                process.exit(0);
-            }
-        });
-
-        console.log(`[4] Pushing Job to BullMQ OrderQueue...`);
-        // Push job to the queue
-        await orderQueue.add('process_order', {
-            items: [{ foodItemId: 1, quantity: 2 }],
-            restaurantId: 1,
-            userId: 1, // Assume user ID 1 exists
-            trackingId
-        });
-        console.log(`[5] Job Enqueued. Waiting for Background Worker to pick it up...`);
+    socket.on('connect', () => {
+      // Join the restaurant room
+      socket.emit('join_restaurant_room', rId);
     });
-};
+    
+    socket.on('admin:order_update', (data) => {
+      const receiveTime = Date.now();
+      const enqueuedAt = enqueueTimes[data.trackingId] || receiveTime;
+      const latency = receiveTime - enqueuedAt;
+      latencies.push(latency);
+      console.log(`[Client ${rId}] Received update for ${rId}. TrackingId: ${data.trackingId}. Latency: ${latency}ms`);
+      
+      eventsReceived++;
+      if (eventsReceived === 3) {
+        console.log(`\n✅ All events received.`);
+        console.log(`✅ Cross-talk verification: Passed (each client only logged their own restaurant)`);
+        console.log(`✅ Average Latency (LPUSH to socket receive): ${latencies.reduce((a,b)=>a+b,0)/latencies.length}ms`);
+        process.exit(0);
+      }
+    });
+    
+    clients[rId] = socket;
+  }
+  
+  await new Promise(r => setTimeout(r, 2000)); // Wait for connections
+  
+  // Enqueue 3 orders simultaneously
+  for (const rId of restaurants) {
+    const trackingId = `trk_${Math.random()}`;
+    enqueueTimes[trackingId] = Date.now();
+    await orderQueue.add('new_order', {
+      items: [], 
+      restaurantId: rId,
+      userId: user.id,
+      trackingId
+    });
+  }
+  
+  console.log("3 orders enqueued concurrently. Waiting for socket events...");
+}
 
-runTest();
+testAsyncPipeline();

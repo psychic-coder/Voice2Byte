@@ -3,9 +3,9 @@
  "version": "1.0.0",
  "description": "",
  "main": "app.js",
- "scripts": {
-  "start": "set NODE_ENV=PRODUCTION & node app.js",
-  "dev": "nodemon app.js",
+  "scripts": {
+  "start": "node --import ./tracing.js app.js",
+  "dev": "nodemon --import ./tracing.js app.js",
   "lint": "eslint . ",
   "lint:fix": "eslint . --fix"
  },
@@ -14,6 +14,10 @@
  "type": "module",
  "license": "ISC",
  "dependencies": {
+  "@opentelemetry/api": "^1.9.1",
+  "@opentelemetry/auto-instrumentations-node": "^0.77.0",
+  "@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
+  "@opentelemetry/sdk-node": "^0.219.0",
   "@prisma/client": "^6.8.2",
   "@upstash/redis": "^1.34.9",
   "bcryptjs": "^3.0.2",
